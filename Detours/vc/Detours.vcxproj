@@ -502,6 +502,7 @@ nmake</Command>
     <ClCompile Include="..\src\uimports.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="FileName.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\samples\dtest\dtarge.h" />

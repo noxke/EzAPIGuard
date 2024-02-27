@@ -22,6 +22,8 @@ nosetests.xml
 *.ipch
 .vs/
 output/
+x86/
+x64/
 include/
 *.exp
 *.pdb

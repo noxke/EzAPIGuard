@@ -41,3 +41,6 @@ obj.*
 /bin.*
 *.vcxproj.FileListAbsolute.txt
 *.vcxprojAssemblyReference.cache
+
+bin.X64/
+bin.X86/

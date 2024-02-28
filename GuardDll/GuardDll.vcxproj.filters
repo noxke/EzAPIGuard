@@ -21,12 +21,33 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="GuardClient.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DetoursHook.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MessageDefine.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GuardClient.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="APIHook.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="APIHook.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DetoursHook.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

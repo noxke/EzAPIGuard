@@ -30,9 +30,6 @@
     <ClInclude Include="Log.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MessageDefine.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Injector.h">
       <Filter>头文件</Filter>
     </ClInclude>

@@ -15,6 +15,10 @@
 #include "GuardClient.h"
 #endif
 
+#ifndef _DETOURS_HOOK_H
+#include "DetoursHook.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -22,13 +26,16 @@ int (WINAPI* OldMessageBoxA)(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt
 
 extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType)
 {
+    printf("MessageBoxA hooked\n");
     // 以MessageBoxA为例，封装数据包
     // 字符串需要注意缓冲区长度
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(api_hooked_msg));
+    
+    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
     if (msg != NULL)
     {
         msg->msg_type = MSG_HOOKED;
         msg->arg_num = 3;   // uType参数不重要
+        msg->process_pid = dwPid;
 
         msg->api_id = API_MESSAGEBOXA;
 
@@ -44,7 +51,7 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
         p1 += 2;
         *(HWND*)((uint8_t*)msg + p2) = hWnd;
         p2 += sizeof(hWnd);
-        if (p2 >= sizeof(api_hooked_msg)) goto arg_end;
+        if (p2 >= sizeof(udp_msg)) goto arg_end;
 
     arg1:
         // arg1
@@ -53,7 +60,7 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
         *(uint16_t*)((uint8_t*)msg + p1) = strlen(lpText);
         p1 += 2;
         p2 += snprintf((char *)msg + p2, sizeof(api_hooked_msg) - p2, lpText);
-        if (p2 >= sizeof(api_hooked_msg)) goto arg_end;
+        if (p2 >= sizeof(udp_msg)) goto arg_end;
 
     arg2:
         // arg2
@@ -62,12 +69,14 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
         *(uint16_t*)((uint8_t*)msg + p1) = strlen(lpCaption);
         p1 += 2;
         p2 += snprintf((char*)msg + p2, sizeof(api_hooked_msg) - p2, lpCaption);
-        if (p2 >= sizeof(api_hooked_msg)) goto arg_end;
+        if (p2 >= sizeof(udp_msg)) goto arg_end;
 
     arg_end:
+        msg->data_length = p2;
         // 使用socket发送api信息
         SocketSend((const char *)msg, (size_t)msg->data_length);
         free(msg);
     }
+    msg = NULL;
     return OldMessageBoxA(NULL, "new MessageBoxA", "Hooked", MB_OK);
 }

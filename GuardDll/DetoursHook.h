@@ -2,7 +2,7 @@
 #define _DETOURS_HOOK_H
 
 extern HMODULE handleModule;
-extern DWORD pid;
+extern DWORD dwPid;
 
 void HookAttach();
 

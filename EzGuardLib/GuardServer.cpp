@@ -14,6 +14,10 @@
 #include "Log.h"
 #endif
 
+#ifndef _MESSAGE_DEFINE_H
+#include"MessageDefine.h"
+#endif
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
@@ -27,60 +31,108 @@
 SOCKET sock = INVALID_SOCKET;
 char udpBuffer[UDP_BUFFER_SIZE];
 
-extern "C" __declspec(dllexport) uint16_t InitServerSocket(uint16_t port)
+extern "C" __declspec(dllexport) void ServerSocketThread(uint16_t serverPort)
+{
+    int retryTimes = 0;
+    uint16_t randPort = serverPort;
+    struct sockaddr_in clientAddr;
+    char clientIP[INET_ADDRSTRLEN];
+    uint16_t clientPort;
+    int clientAddrLen = sizeof(clientAddr);
+    srand((uint32_t)time(0));
+
+    // 初始化socket
+    while (retryTimes++ < RETRY_TIMES)
+    {
+        if (serverPort == 0)
+        {
+            randPort = rand() % 0x10000;
+            if (randPort < 1024) randPort += 1024;
+        }
+        if (InitServerSocket(randPort) == 0)
+        {
+            retryTimes = 0;
+            break;
+        }
+    }
+    if (retryTimes != 0)
+    {
+        return;
+    }
+
+    while (1)
+    {
+        int recvBytes = recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, (sockaddr *)& clientAddr, &clientAddrLen);
+        if (recvBytes == SOCKET_ERROR)
+        {
+            continue;
+        }
+        inet_ntop(AF_INET, &(clientAddr.sin_addr), clientIP, INET_ADDRSTRLEN);
+        clientPort = ntohs(clientAddr.sin_port);
+        struct udp_msg* msg = (struct udp_msg*)udpBuffer;
+        struct api_hooked_msg* api_msg = (struct api_hooked_msg*)udpBuffer;
+        switch (msg->msg_type)
+        {
+        case MSG_HELLO:
+            LOG_PRINTF("Received hello from %s:%d", clientIP, clientPort);
+            break;
+        case MSG_HOOKED:
+            LOG_PRINTF("Received api hooked from %s:%d", clientIP, clientPort);
+            LOG_PRINTF("PID: %d, API id: %d, API arg num: %d", api_msg->process_pid, api_msg->api_id, api_msg->arg_num);
+            break;
+        default:
+            break;
+        }
+    }
+
+}
+
+extern "C" __declspec(dllexport) int InitServerSocket(uint16_t port)
 {
     WSADATA wsaData;
     struct sockaddr_in serverAddr;
-    uint16_t randPort = port;
     int iResult;
     int retryTimes = 0;
-
-    srand(time(0));
 
     // 初始化 Winsock
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
-        LOGPRINTF("WSAStartup failed: %d", iResult);
-        return 0;
+        LOG_PRINTF("WSAStartup failed: %d", iResult);
+        return -1;
     }
 
     // 创建UDP套接字
     sock = socket(AF_INET, SOCK_DGRAM, 0);
 
     if (sock == INVALID_SOCKET) {
-        LOGPRINTF("Error at socket() : % ld", WSAGetLastError());
+        LOG_PRINTF("Error at socket() : % ld", WSAGetLastError());
         WSACleanup();
-        return 0;
+        return -1;
+    }
+
+    // 设置接收超时
+    DWORD timeoutValue = RECV_TIMEOUT;
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeoutValue, sizeof(timeoutValue)) == SOCKET_ERROR) {
+        closesocket(sock);
+        WSACleanup();
+        return -1;
     }
 
     // 设置服务器地址和端口
     memset(&serverAddr, 0, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY; // 接收来自任何地址的数据
-    while (retryTimes++ < RETRY_TIMES)
-    {
-        if (port == 0)
-        {
-            randPort = rand() % 0x10000;
-            if (randPort < 1024) randPort += 1024;
-        }
-        serverAddr.sin_port = htons(randPort); // 设置端口号
+    
+    serverAddr.sin_port = htons(port); // 设置端口号
 
-        iResult = bind(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
-        if (iResult == SOCKET_ERROR) {
-            if (port != 0)
-            {
-                LOGPRINTF("bind failed with error: %d", WSAGetLastError());
-                closesocket(sock);
-                WSACleanup();
-                return 0;
-            }
-            randPort = 0;
-            continue;
-        }
-        break;
+    iResult = bind(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+    if (iResult == SOCKET_ERROR) {
+            LOG_PRINTF("bind failed with error: %d", WSAGetLastError());
+            closesocket(sock);
+            WSACleanup();
+            return -1;
     }
-    return randPort;
+    return 0;
 }
 
 extern "C" __declspec(dllexport) void CloseServerSocket()
@@ -90,17 +142,14 @@ extern "C" __declspec(dllexport) void CloseServerSocket()
     WSACleanup();
 }
 
-void SocketRecv()
+extern "C" __declspec(dllexport) void SocketSend(struct sockaddr_in *clientAddr, const char* data, int dataLen)
 {
-    struct sockaddr_in clientAddr;
-    int clientAddrLen = sizeof(clientAddr);
-    // 接收数据
-    memset(udpBuffer, 0, UDP_BUFFER_SIZE);
-    if (recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, (struct sockaddr*)&clientAddr, &clientAddrLen) == SOCKET_ERROR) {
-        LOGPRINTF("Failed to receive data.");
-        closesocket(sock);
-        WSACleanup();
+    int retryTimes = 0;
+    while (retryTimes++ < RETRY_TIMES)
+    {
+        if (sendto(sock, data, dataLen, 0, (sockaddr *)clientAddr, sizeof(struct sockaddr_in)) != SOCKET_ERROR)
+        {
+            continue;
+        }
     }
-
-    LOGPRINTF("Received message from %s:%d: %s", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port), udpBuffer);
 }

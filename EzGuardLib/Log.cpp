@@ -9,6 +9,8 @@
 
 #include <stdio.h>
 
+char logBuffer[LOG_BUFFER_SIZE];
+
 extern "C" __declspec(dllexport) int LogStrMsg(const char* msg)
 {
     puts(msg);

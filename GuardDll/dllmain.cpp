@@ -8,7 +8,7 @@
 #endif
 
 HMODULE handleModule;
-DWORD pid;
+DWORD dwPid;
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -19,7 +19,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     {
     case DLL_PROCESS_ATTACH:
         handleModule = hModule;
-        pid = GetCurrentProcessId();
+        dwPid = GetCurrentProcessId();
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:

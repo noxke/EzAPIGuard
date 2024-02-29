@@ -33,8 +33,10 @@ struct sockaddr_in serverAddr;
 char udpBuffer[UDP_BUFFER_SIZE];
 
 // Socket通信线程，接收server数据
-extern "C" __declspec(dllexport) void ClientSocketThread(uint16_t serverPort)
+extern "C" __declspec(dllexport) void ClientSocketThread(LPVOID serverPortP)
 {
+    uint16_t serverPort = (uintptr_t)serverPortP & 0xFFFF;
+    printf("ServerPort: %d\n", serverPort);
     int retryTimes = 0;
     uint16_t randPort;
     srand((uint32_t)time(0));
@@ -64,7 +66,7 @@ extern "C" __declspec(dllexport) void ClientSocketThread(uint16_t serverPort)
     struct hello_msg* helloMsg = (struct hello_msg*)udpBuffer;
     helloMsg->msg_type = MSG_HELLO;
     helloMsg->data_length = sizeof(struct hello_msg);
-    helloMsg->process_pid = pid;
+    helloMsg->process_pid = dwPid;
 
     retryTimes = 0;
     while (retryTimes++ < RETRY_TIMES)
@@ -88,6 +90,9 @@ extern "C" __declspec(dllexport) void ClientSocketThread(uint16_t serverPort)
         CloseClientSocket();
     }
 
+    // 设置hook(临时代码)
+    HookAttach();
+
     while (1)
     {
         int recvBytes = recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
@@ -99,10 +104,10 @@ extern "C" __declspec(dllexport) void ClientSocketThread(uint16_t serverPort)
         switch (msg->msg_type)
         {
         case MSG_HELLO:
-            printf("hello from server");
+            printf("hello from server\n");
             break;
         case MSG_STOP:
-            printf("stop");
+            printf("stop\n");
             // 关闭socket
             CloseClientSocket();
             // 关闭所有Hook
@@ -120,7 +125,7 @@ extern "C" __declspec(dllexport) int InitClientSocket(uint16_t port)
     struct sockaddr_in clientAddr;
     int iResult;
     int retryTimes = 0;
-
+    
     // 初始化 Winsock
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
@@ -173,7 +178,7 @@ extern "C" __declspec(dllexport) void SocketSend(const char * data, int dataLen)
     {
         if (sendto(sock, data, dataLen, 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) != SOCKET_ERROR)
         {
-            continue;
+            break;
         }
     }
 }

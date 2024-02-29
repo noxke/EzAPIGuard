@@ -2,8 +2,6 @@
 // API HOOK服务端
 // 创建socket与api hook进行通信
 
-//! TODO
-
 #include "pch.h"
 
 #ifndef _GUARD_SERVER_H
@@ -31,9 +29,10 @@
 SOCKET sock = INVALID_SOCKET;
 char udpBuffer[UDP_BUFFER_SIZE];
 
-extern "C" __declspec(dllexport) void ServerSocketThread(uint16_t serverPort)
+extern "C" __declspec(dllexport) void ServerSocketThread(uint16_t *serverPortP)
 {
     int retryTimes = 0;
+    uint16_t serverPort = *serverPortP;
     uint16_t randPort = serverPort;
     struct sockaddr_in clientAddr;
     char clientIP[INET_ADDRSTRLEN];
@@ -55,6 +54,8 @@ extern "C" __declspec(dllexport) void ServerSocketThread(uint16_t serverPort)
             break;
         }
     }
+    *serverPortP = randPort;
+    LOG_PRINTF("ServerPort: %d", randPort);
     if (retryTimes != 0)
     {
         return;
@@ -71,10 +72,16 @@ extern "C" __declspec(dllexport) void ServerSocketThread(uint16_t serverPort)
         clientPort = ntohs(clientAddr.sin_port);
         struct udp_msg* msg = (struct udp_msg*)udpBuffer;
         struct api_hooked_msg* api_msg = (struct api_hooked_msg*)udpBuffer;
+        struct hello_msg* helloMsg = (struct hello_msg*)udpBuffer;
         switch (msg->msg_type)
         {
         case MSG_HELLO:
             LOG_PRINTF("Received hello from %s:%d", clientIP, clientPort);
+            // 向客户端发送hello 报告端口信息
+            helloMsg->msg_type = MSG_HELLO;
+            helloMsg->data_length = sizeof(struct hello_msg);
+            helloMsg->process_pid = GetCurrentProcessId();
+            SocketSend(&clientAddr, (const char*)helloMsg, (size_t)helloMsg->data_length);
             break;
         case MSG_HOOKED:
             LOG_PRINTF("Received api hooked from %s:%d", clientIP, clientPort);
@@ -149,7 +156,7 @@ extern "C" __declspec(dllexport) void SocketSend(struct sockaddr_in *clientAddr,
     {
         if (sendto(sock, data, dataLen, 0, (sockaddr *)clientAddr, sizeof(struct sockaddr_in)) != SOCKET_ERROR)
         {
-            continue;
+            break;
         }
     }
 }

@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-extern "C" __declspec(dllexport) void ServerSocketThread(uint16_t serverPort);
+extern "C" __declspec(dllexport) void ServerSocketThread(uint16_t *serverPortP);
 
 extern "C" __declspec(dllexport) int InitServerSocket(uint16_t port);
 

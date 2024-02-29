@@ -9,7 +9,7 @@
 #define RETRY_TIMES 3
 #define RECV_TIMEOUT 1000
 
-extern "C" __declspec(dllexport) void ClientSocketThread(uint16_t serverPort);
+extern "C" __declspec(dllexport) void ClientSocketThread(LPVOID serverPortP);
 
 extern "C" __declspec(dllexport) int InitClientSocket(uint16_t port);
 

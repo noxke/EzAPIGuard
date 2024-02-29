@@ -27,22 +27,14 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
     if (msg != NULL)
     {
         msg->msg_type = MSG_HOOKED;
-        msg->arg_num = 4;
-        uint16_t p1;
-        uint16_t p2 = 14;
+        msg->arg_num = 3;   // uType参数不重要
 
-    api_name:
-        // api name
-        msg->api_name_off = p2;
-        msg->api_name_len = strlen("MessageBoxA");
-
-        p2 += snprintf((char*)msg + p2, sizeof(api_hooked_msg) - p2, "MessageBoxA");
-        if (p2 >= sizeof(api_hooked_msg)) goto arg_end;
+        msg->api_id = API_MESSAGEBOXA;
 
         // p1指向参数列表
         // p2指向参数
-        p1 = p2;
-        p2 = p1 + msg->arg_num * 4;
+        uint16_t p1 = sizeof(struct api_hooked_msg);
+        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
     arg0:
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -69,16 +61,6 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
         *(uint16_t*)((uint8_t*)msg + p1) = strlen(lpCaption);
         p1 += 2;
         p2 += snprintf((char*)msg + p2, sizeof(api_hooked_msg) - p2, lpCaption);
-        if (p2 >= sizeof(api_hooked_msg)) goto arg_end;
-
-    arg3:
-        // arg3
-        *(uint16_t*)((uint8_t*)msg + p1) = p2;
-        p1 += 2;
-        *(uint16_t*)((uint8_t*)msg + p1) = sizeof(UINT);
-        p1 += 2;
-        *(UINT*)((uint8_t*)msg + p2) = uType;
-        p2 += sizeof(UINT);
         if (p2 >= sizeof(api_hooked_msg)) goto arg_end;
 
     arg_end:

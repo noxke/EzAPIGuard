@@ -4,6 +4,8 @@
 #define _API_HOOK_H
 
 #include <Windows.h>
+//hook的api有 MessageBoxA MessageBoxW CreateFile ReadFile HeapCreate HeapDestroy HeapFree HeapAlloc RegCreateKeyEx
+// RegSetValueEx RegCloseKey RegOpenKeyEx RegDeleteValue
 //消息框MessageBox操作的hook定义
 extern int (WINAPI* OldMessageBoxA)(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType);
 

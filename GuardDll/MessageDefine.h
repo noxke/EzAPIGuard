@@ -1,4 +1,4 @@
-﻿// MessageDefine.h
+// MessageDefine.h
 // 定义通信消息封装格式
 
 #pragma once
@@ -18,6 +18,18 @@
 
 // 定义API ID
 #define API_MESSAGEBOXA 1
+#define API_MESSAGEBOXW 2
+#define API_CreateFile 3
+#define API_HeapCreate 4
+#define API_HeapDestroy 5
+#define API_HeapFree 6
+#define API_HeapAlloc 7
+#define API_RegCreateKeyEx 8
+#define API_RegSetValueEx 9
+#define API_RegCloseKey 10
+#define API_RegOpenKeyEx 11
+#define API_RegDeleteValue 12
+ 
 
 // 基础数据包
 struct udp_msg

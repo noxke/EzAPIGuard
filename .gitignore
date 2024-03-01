@@ -22,6 +22,8 @@ nosetests.xml
 *.ipch
 .vs/
 output/
+Debug/
+DebugMDd/
 x86/
 x64/
 include/
@@ -44,3 +46,9 @@ obj.*
 
 bin.X64/
 bin.X86/
+
+# Python venv
+venv/
+*.spec
+build/
+dist/

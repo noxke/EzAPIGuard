@@ -15,8 +15,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="EzAPIGuard.cpp">
+    <None Include="main.py">
       <Filter>源文件</Filter>
-    </ClCompile>
+    </None>
+    <None Include="Makefile">
+      <Filter>源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>

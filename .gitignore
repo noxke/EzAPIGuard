@@ -48,7 +48,10 @@ bin.X64/
 bin.X86/
 
 # Python venv
+.vscode/
+.venv/
 venv/
 *.spec
 build/
 dist/
+__pycache__/

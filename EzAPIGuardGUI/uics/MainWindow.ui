@@ -1,0 +1,1248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1280</width>
+    <height>720</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="mouseTracking">
+   <bool>false</bool>
+  </property>
+  <property name="windowTitle">
+   <string>EzAPIGuard</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,12,0">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_1" stretch="0">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetDefaultConstraint</enum>
+      </property>
+      <item>
+       <layout class="QVBoxLayout" name="processListVerticalLayout">
+        <item>
+         <widget class="QLabel" name="processListLabel">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Panel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Sunken</enum>
+          </property>
+          <property name="lineWidth">
+           <number>1</number>
+          </property>
+          <property name="text">
+           <string>Process List</string>
+          </property>
+          <property name="textFormat">
+           <enum>Qt::PlainText</enum>
+          </property>
+          <property name="scaledContents">
+           <bool>false</bool>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="wordWrap">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTreeWidget" name="processListTreeWidget">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAsNeeded</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="allColumnsShowFocus">
+           <bool>false</bool>
+          </property>
+          <attribute name="headerCascadingSectionResizes">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="headerDefaultSectionSize">
+           <number>64</number>
+          </attribute>
+          <attribute name="headerHighlightSections">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="headerMinimumSectionSize">
+           <number>32</number>
+          </attribute>
+          <attribute name="headerShowSortIndicator" stdset="0">
+           <bool>true</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string>Process</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>PID</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Status</string>
+           </property>
+          </column>
+          <item>
+           <property name="text">
+            <string>test.exe</string>
+           </property>
+           <property name="text">
+            <string>114514</string>
+           </property>
+           <property name="text">
+            <string>Enable</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <layout class="QVBoxLayout" name="recordVerticalLayout">
+        <item>
+         <widget class="QLabel" name="recordLabel">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Panel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Sunken</enum>
+          </property>
+          <property name="text">
+           <string>API Hook Records</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTreeWidget" name="recordTreeWidget">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAsNeeded</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="dragEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="textElideMode">
+           <enum>Qt::ElideRight</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="wordWrap">
+           <bool>false</bool>
+          </property>
+          <property name="headerHidden">
+           <bool>false</bool>
+          </property>
+          <attribute name="headerVisible">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="headerCascadingSectionResizes">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="headerDefaultSectionSize">
+           <number>64</number>
+          </attribute>
+          <attribute name="headerHighlightSections">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="headerMinimumSectionSize">
+           <number>32</number>
+          </attribute>
+          <attribute name="headerShowSortIndicator" stdset="0">
+           <bool>true</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string>ApiName</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Details</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Status</string>
+           </property>
+          </column>
+          <item>
+           <property name="text">
+            <string>MessageBoxA</string>
+           </property>
+           <property name="text">
+            <string>11:45:14</string>
+           </property>
+           <property name="text">
+            <string>Allow</string>
+           </property>
+           <item>
+            <property name="text">
+             <string>lpText</string>
+            </property>
+            <property name="text">
+             <string>114514</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>lpCaption</string>
+            </property>
+            <property name="text">
+             <string>114514</string>
+            </property>
+           </item>
+          </item>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="searchBarHorizontalLayout" stretch="0,0">
+          <item>
+           <widget class="QLineEdit" name="searchLineEdit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="placeholderText">
+             <string>Search</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="searchClearButton">
+            <property name="text">
+             <string>Clear</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <layout class="QVBoxLayout" name="configVerticalLayout">
+        <item>
+         <widget class="QLabel" name="configLabel">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Panel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Sunken</enum>
+          </property>
+          <property name="text">
+           <string>Config Selected</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="selectedHorizontalLayout">
+          <item>
+           <widget class="QPushButton" name="selectedButton">
+            <property name="text">
+             <string>Selected</string>
+            </property>
+            <property name="checkable">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="overviewButton">
+            <property name="text">
+             <string>Overview</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="Line" name="line_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="processNameHorizontalLayout" stretch="0,1">
+          <item>
+           <widget class="QLabel" name="processNameLabel_">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>ProcessName:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="processNameLabel">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>test.exe</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="Line" name="line_1">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QGridLayout" name="configGridLayout" columnstretch="2,1,1">
+          <item row="0" column="0">
+           <widget class="QLabel" name="apiTypeLabel">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>ApiType</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="fileRiskLabel">
+            <property name="text">
+             <string>FileRisk</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="registryLabel">
+            <property name="text">
+             <string>Registry</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="networkRiskLabel">
+            <property name="text">
+             <string>NetworkRisk</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="heapLabel">
+            <property name="text">
+             <string>Heap</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0">
+           <widget class="QLabel" name="memCopyLabel">
+            <property name="text">
+             <string>MemCopy</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="heapRiskLabel">
+            <property name="text">
+             <string>HeapRisk</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="fileLabel">
+            <property name="text">
+             <string>File</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="registryRiskLabel">
+            <property name="text">
+             <string>RegistryRisk</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="1">
+           <widget class="QComboBox" name="memCopyRule">
+            <item>
+             <property name="text">
+              <string>Allow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Reject</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QComboBox" name="registryRiskRule">
+            <item>
+             <property name="text">
+              <string>Allow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Reject</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="QComboBox" name="networkRiskRule">
+            <item>
+             <property name="text">
+              <string>Allow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Reject</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QComboBox" name="registryRule">
+            <item>
+             <property name="text">
+              <string>Allow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Reject</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="heapRule">
+            <item>
+             <property name="text">
+              <string>Allow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Reject</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QComboBox" name="heapRiskRule">
+            <item>
+             <property name="text">
+              <string>Allow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Reject</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QComboBox" name="fileRule">
+            <item>
+             <property name="text">
+              <string>Allow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Reject</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QComboBox" name="fileRiskRule">
+            <item>
+             <property name="text">
+              <string>Allow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Reject</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Rule</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="countLabel">
+            <property name="text">
+             <string>Count</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QLabel" name="heapCnt">
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QLabel" name="heapRiskCnt">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QLabel" name="fileCnt">
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="2">
+           <widget class="QLabel" name="fileRiskCnt">
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="2">
+           <widget class="QLabel" name="registryCnt">
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="2">
+           <widget class="QLabel" name="registryRiskCnt">
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="2">
+           <widget class="QLabel" name="networkRiskCnt">
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="2">
+           <widget class="QLabel" name="memCopyCnt">
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="Line" name="line_3">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QGridLayout" name="hookStatusGridLayout">
+          <item row="4" column="0">
+           <widget class="QPushButton" name="hookDisableButton">
+            <property name="text">
+             <string>HookDisable</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QPushButton" name="hookEnableButton">
+            <property name="text">
+             <string>HookEnable</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QLabel" name="warningCnt">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0 Warning</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QLabel" name="hookedCnt">
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0 Hooked</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QPushButton" name="hookUnloadButton">
+            <property name="text">
+             <string>HookUnload</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QPushButton" name="killProcButton">
+            <property name="text">
+             <string>KillProc</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="loginfoLabel">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::Panel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Sunken</enum>
+          </property>
+          <property name="text">
+           <string>Log Info</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTextBrowser" name="loginfoTextBrowser">
+          <property name="html">
+           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'SimSun'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;test.exe pid:114 MessageBoxA hooked 114514 114514&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1280</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="recordSave"/>
+    <addaction name="recordLoad"/>
+   </widget>
+   <widget class="QMenu" name="menuProcess">
+    <property name="title">
+     <string>Process</string>
+    </property>
+    <addaction name="processAttach"/>
+    <addaction name="processRun"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="viewReset"/>
+   </widget>
+   <widget class="QMenu" name="menuAbout">
+    <property name="title">
+     <string>About</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuProcess"/>
+   <addaction name="menuView"/>
+   <addaction name="menuAbout"/>
+  </widget>
+  <action name="actionAttach">
+   <property name="text">
+    <string>Attach</string>
+   </property>
+  </action>
+  <action name="actionRun">
+   <property name="text">
+    <string>Run</string>
+   </property>
+  </action>
+  <action name="viewReset">
+   <property name="text">
+    <string>Reset</string>
+   </property>
+  </action>
+  <action name="processAttach">
+   <property name="text">
+    <string>Attach</string>
+   </property>
+  </action>
+  <action name="processRun">
+   <property name="text">
+    <string>Run</string>
+   </property>
+  </action>
+  <action name="recordSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="recordLoad">
+   <property name="text">
+    <string>Load</string>
+   </property>
+  </action>
+  <action name="actionPort">
+   <property name="text">
+    <string>Port</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About EzAPIGuard</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>searchLineEdit</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>record_search_filter()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>318</x>
+     <y>694</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>275</x>
+     <y>706</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>searchClearButton</sender>
+   <signal>clicked()</signal>
+   <receiver>searchLineEdit</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>874</x>
+     <y>694</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>824</x>
+     <y>694</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>processListTreeWidget</sender>
+   <signal>itemSelectionChanged()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>select_process()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>160</x>
+     <y>383</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>5</x>
+     <y>405</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>hookEnableButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>hook_enable()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1062</x>
+     <y>455</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>946</x>
+     <y>431</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>hookDisableButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>hook_disable()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1066</x>
+     <y>490</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>947</x>
+     <y>471</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>hookUnloadButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>hook_unload()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1166</x>
+     <y>455</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>946</x>
+     <y>526</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>selectedButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>view_selected()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>981</x>
+     <y>100</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>948</x>
+     <y>97</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>overviewButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>view_overview()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1154</x>
+     <y>101</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>946</x>
+     <y>136</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>heapRule</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>rules_config()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1126</x>
+     <y>204</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>948</x>
+     <y>206</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>heapRiskRule</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>rules_config()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1130</x>
+     <y>236</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>947</x>
+     <y>232</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>fileRule</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>rules_config()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1136</x>
+     <y>263</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>945</x>
+     <y>262</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>fileRiskRule</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>rules_config()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1143</x>
+     <y>288</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>948</x>
+     <y>300</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>registryRule</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>rules_config()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1123</x>
+     <y>311</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>949</x>
+     <y>334</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>registryRiskRule</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>rules_config()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1116</x>
+     <y>344</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>950</x>
+     <y>360</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>networkRiskRule</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>rules_config()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1115</x>
+     <y>374</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>949</x>
+     <y>387</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>memCopyRule</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>rules_config()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1142</x>
+     <y>396</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>947</x>
+     <y>416</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>killProcButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>kill_process()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1106</x>
+     <y>476</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>957</x>
+     <y>498</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>record_search_filter()</slot>
+  <slot>select_process()</slot>
+  <slot>hook_enable()</slot>
+  <slot>hook_disable()</slot>
+  <slot>hook_unload()</slot>
+  <slot>view_selected()</slot>
+  <slot>view_overview()</slot>
+  <slot>rules_config()</slot>
+  <slot>kill_process()</slot>
+ </slots>
+</ui>

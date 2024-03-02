@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>480</width>
+    <height>680</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ProcessViewer</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTreeWidget" name="processTreeWidget">
+     <property name="verticalScrollBarPolicy">
+      <enum>Qt::ScrollBarAsNeeded</enum>
+     </property>
+     <property name="horizontalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="rootIsDecorated">
+      <bool>true</bool>
+     </property>
+     <property name="sortingEnabled">
+      <bool>true</bool>
+     </property>
+     <attribute name="headerDefaultSectionSize">
+      <number>64</number>
+     </attribute>
+     <attribute name="headerMinimumSectionSize">
+      <number>64</number>
+     </attribute>
+     <attribute name="headerShowSortIndicator" stdset="0">
+      <bool>true</bool>
+     </attribute>
+     <attribute name="headerStretchLastSection">
+      <bool>true</bool>
+     </attribute>
+     <column>
+      <property name="text">
+       <string>Process</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>PID</string>
+      </property>
+     </column>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLineEdit" name="searchLineEdit">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="placeholderText">
+        <string>Search</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="clearButton">
+       <property name="text">
+        <string>Clear</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="attachButton">
+       <property name="text">
+        <string>Attach</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>clearButton</sender>
+   <signal>clicked()</signal>
+   <receiver>searchLineEdit</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>298</x>
+     <y>657</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>240</x>
+     <y>656</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>attachButton</sender>
+   <signal>clicked()</signal>
+   <receiver>Dialog</receiver>
+   <slot>return_selected_pid()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>405</x>
+     <y>658</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>452</x>
+     <y>674</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>clearButton</sender>
+   <signal>clicked()</signal>
+   <receiver>processTreeWidget</receiver>
+   <slot>clearSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>345</x>
+     <y>649</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>339</x>
+     <y>600</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>searchLineEdit</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>Dialog</receiver>
+   <slot>search_filter()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>39</x>
+     <y>651</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>6</x>
+     <y>637</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>return_selected_pid()</slot>
+  <slot>search_filter()</slot>
+ </slots>
+</ui>

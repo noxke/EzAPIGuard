@@ -1,6 +1,7 @@
 altgraph==0.17.4
 packaging==23.2
 pefile==2023.2.7
+psutil==5.9.8
 pyinstaller==6.4.0
 pyinstaller-hooks-contrib==2024.2
 PyQt6==6.6.1

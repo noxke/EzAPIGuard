@@ -1,4 +1,9 @@
-#include <bits/stdc++.h>
+﻿#define _CRT_SECURE_NO_WARNINGS
+
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 #include <windows.h>
 #include <thread>
 #include <mutex>

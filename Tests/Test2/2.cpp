@@ -1,4 +1,7 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 #include <Windows.h>
 #include <thread>
 #include <mutex>

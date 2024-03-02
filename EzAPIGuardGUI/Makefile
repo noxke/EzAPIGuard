@@ -17,7 +17,9 @@ all:
     venv\Scripts\activate.bat && pyinstaller -n EzAPIGuard -y --noconsole main.py
     move /y $(OUT_DIR)\*.dll $(MAKEDIR)\dist\EzAPIGuard
     @if exist "$(ROOT)\output" cmd /c "rmdir /S /Q $(ROOT)\output"
-    mkdir $(ROOT)\output
+    @if not exist "$(ROOT)\output" mkdir $(ROOT)\output
+    @if not exist "$(ROOT)\output\Tests" mkdir $(ROOT)\output\Tests
+    move /y $(OUT_DIR)\*.exe $(ROOT)\output\Tests
     move /y $(MAKEDIR)\dist\EzAPIGuard $(ROOT)\output
 
 

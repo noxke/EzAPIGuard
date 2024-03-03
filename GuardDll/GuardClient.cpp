@@ -27,18 +27,21 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-SOCKET sock = INVALID_SOCKET;
+
 struct sockaddr_in serverAddr;
+
+uint16_t serverPort = 0;    // 注入前patch为真实端口
 
 char udpBuffer[UDP_BUFFER_SIZE];
 
 // Socket通信线程，接收server数据
-extern "C" __declspec(dllexport) void ClientSocketThread(LPVOID serverPortP)
+void ClientSocketThread()
 {
-    uint16_t serverPort = (uintptr_t)serverPortP & 0xFFFF;
-    printf("ServerPort: %d\n", serverPort);
+    // printf("ServerPort: %d\n", serverPort);
     int retryTimes = 0;
     uint16_t randPort;
+    SOCKET sock = INVALID_SOCKET;
+
     srand((uint32_t)time(0));
     // 设置服务器地址和端口
     memset(&serverAddr, 0, sizeof(serverAddr));
@@ -51,7 +54,7 @@ extern "C" __declspec(dllexport) void ClientSocketThread(LPVOID serverPortP)
     {
         randPort = rand() % 0x10000;
         if (randPort < 1024) randPort += 1024;
-        if (InitClientSocket(randPort) == 0)
+        if (InitUdpSocket(&sock, randPort) == 0)
         {
             retryTimes = 0;
             break;
@@ -71,7 +74,7 @@ extern "C" __declspec(dllexport) void ClientSocketThread(LPVOID serverPortP)
     retryTimes = 0;
     while (retryTimes++ < RETRY_TIMES)
     {
-        SocketSend((const char*)helloMsg, (size_t)helloMsg->data_length);
+        UdpSocketSend(&sock, (const char*)helloMsg, (size_t)helloMsg->data_length);
         memset(udpBuffer, 0, UDP_BUFFER_SIZE);
         int recvBytes = recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
         if (recvBytes != SOCKET_ERROR)
@@ -87,7 +90,9 @@ extern "C" __declspec(dllexport) void ClientSocketThread(LPVOID serverPortP)
     if (retryTimes != 0)
     {
         // 未接收到服务端hello
-        CloseClientSocket();
+        // 关闭socket
+        // 关闭所有Hook
+        // 卸载DLL
     }
 
     // 设置hook(临时代码)
@@ -104,14 +109,11 @@ extern "C" __declspec(dllexport) void ClientSocketThread(LPVOID serverPortP)
         switch (msg->msg_type)
         {
         case MSG_HELLO:
-            printf("hello from server\n");
             break;
         case MSG_STOP:
-            printf("stop\n");
             // 关闭socket
-            CloseClientSocket();
             // 关闭所有Hook
-            HookDetachAll();
+            // 卸载DLL
             return;
         default:
             break;
@@ -119,8 +121,9 @@ extern "C" __declspec(dllexport) void ClientSocketThread(LPVOID serverPortP)
     }
 }
 
-extern "C" __declspec(dllexport) int InitClientSocket(uint16_t port)
+int InitUdpSocket(SOCKET* sock, uint16_t port)
 {
+    // 不能使用WSACleanup，在多线程环境中， WSACleanup 终止所有线程的 Windows 套接字操作。
     WSADATA wsaData;
     struct sockaddr_in clientAddr;
     int iResult;
@@ -133,18 +136,16 @@ extern "C" __declspec(dllexport) int InitClientSocket(uint16_t port)
     }
 
     // 创建UDP套接字
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    *sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-    if (sock == INVALID_SOCKET) {
-        WSACleanup();
+    if (*sock == INVALID_SOCKET) {
         return -1;
     }
 
     // 设置接收超时
     DWORD timeoutValue = RECV_TIMEOUT;
-    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeoutValue, sizeof(timeoutValue)) == SOCKET_ERROR) {
-        closesocket(sock);
-        WSACleanup();
+    if (setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeoutValue, sizeof(timeoutValue)) == SOCKET_ERROR) {
+        closesocket(*sock);
         return -1;
     }
 
@@ -155,28 +156,26 @@ extern "C" __declspec(dllexport) int InitClientSocket(uint16_t port)
 
     clientAddr.sin_port = htons(port); // 设置端口号
 
-    iResult = bind(sock, (struct sockaddr*)&clientAddr, sizeof(clientAddr));
+    iResult = bind(*sock, (struct sockaddr*)&clientAddr, sizeof(clientAddr));
     if (iResult == SOCKET_ERROR) {
-        closesocket(sock);
-        WSACleanup();
+        closesocket(*sock);
         return -1;
     }
     return 0;
 }
 
-extern "C" __declspec(dllexport) void CloseClientSocket()
+void CloseUdpSocket(SOCKET* sock)
 {
-    // 关闭套接字和清理 Winsock
-    closesocket(sock);
-    WSACleanup();
+    // 关闭套接字
+    closesocket(*sock);
 }
 
-extern "C" __declspec(dllexport) void SocketSend(const char * data, int dataLen)
+void UdpSocketSend(SOCKET* sock, const char * data, int dataLen)
 {
     int retryTimes = 0;
     while (retryTimes++ < RETRY_TIMES)
     {
-        if (sendto(sock, data, dataLen, 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) != SOCKET_ERROR)
+        if (sendto(*sock, data, dataLen, 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) != SOCKET_ERROR)
         {
             break;
         }

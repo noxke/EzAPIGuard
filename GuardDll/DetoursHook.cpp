@@ -2,6 +2,7 @@
 // GuardDll主功能函数 使用Detours进行api hook
 
 #include "pch.h"
+#include <Windows.h>
 
 #ifndef _DETOURS_HOOK_H
 #include "DetoursHook.h"
@@ -15,6 +16,7 @@
 
 #pragma comment(lib, "detours.lib")
 
+#define DLL_EXPORT extern "C" __declspec(dllexport)
 
 void HookAttach()
 {
@@ -33,7 +35,13 @@ void HookDetach()
     DetourTransactionCommit();
 }
 
-extern "C" __declspec(dllexport) void HookDetachAll()
+DLL_EXPORT void HookDetachAll()
 {
     HookDetach();
+}
+
+void UnloadInjectedDll()
+{
+    Sleep(100);
+    FreeLibraryAndExitThread(handleModule, 0);
 }

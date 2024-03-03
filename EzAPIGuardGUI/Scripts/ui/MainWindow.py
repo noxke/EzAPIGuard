@@ -7,6 +7,12 @@ from . import ProcessView
 from . import APIRequestDialog
 from . import AboutDialog
 
+# 导入EzGuardLib
+import os
+import sys
+sys.path.append(os.getcwd())
+import guardlib
+
 class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
     """主窗口"""
     def __init__(self, parent=None):

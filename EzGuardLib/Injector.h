@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #define _INJECTOR_H
 
 #define GUARD_DLL "GuardDll.dll"
@@ -6,11 +6,14 @@
 #include <Windows.h>
 #include <stdint.h>
 
-// 通过进程名获取pid
-extern "C" __declspec(dllexport) DWORD GetDwPidByName(const char* procName);
+#define DLL_EXPORT extern "C" __declspec(dllexport)
+
+// 两种架构下LoadLibraryW在kernel32.dll中的偏移
+DLL_EXPORT extern uint64_t LoadLibraryAoff86;
+DLL_EXPORT extern uint64_t LoadLibraryAoff64;
 
 // 注入dll到目标进程
-extern "C" __declspec(dllexport) BOOL InjectByPID(DWORD dwPID, LPCSTR dllPath);
+DLL_EXPORT BOOL InjectByPID(uint32_t dwPID, const char *dllPath);
 
-// 在目标进程中创建远程线程运行ClientSocketThread
-extern "C" __declspec(dllexport) BOOL RunClientThreadByPID(DWORD dwPID, LPCSTR dllPath, uint16_t serverPort);
+// 启动目标程序并注入dll
+DLL_EXPORT BOOL RunInject(const char *exePath, char *cmdLine, const char *dllPath);

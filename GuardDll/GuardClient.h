@@ -3,16 +3,21 @@
 
 #include <stdint.h>
 
+#define DLL_EXPORT extern "C" __declspec(dllexport)
+
 #define SERVER_IP "127.0.0.1"
 #define CLIENT_IP "127.0.0.1"
 
 #define RETRY_TIMES 3
 #define RECV_TIMEOUT 1000
 
-extern "C" __declspec(dllexport) void ClientSocketThread(LPVOID serverPortP);
+// 导出端口，注入前将serverPort patch为真实端口
+DLL_EXPORT extern uint16_t serverPort;
 
-extern "C" __declspec(dllexport) int InitClientSocket(uint16_t port);
+void ClientSocketThread();
 
-extern "C" __declspec(dllexport) void CloseClientSocket();
+int InitUdpSocket(SOCKET *sock, uint16_t port);
 
-extern "C" __declspec(dllexport) void SocketSend(const char* data, int dataLen);
+void CloseUdpSocket(SOCKET* sock);
+
+void UdpSocketSend(SOCKET* sock, const char* data, int dataLen);

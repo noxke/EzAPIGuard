@@ -8,7 +8,7 @@ void HookAttach();
 
 void HookDetach();
 
-extern "C" __declspec(dllexport) void HookDetachAll();
+void HookDetachAll();
 
 // 从进程中卸载注入的dll
-extern "C" __declspec(dllexport) void UnloadInjectedDll();
+void UnloadInjectedDll();

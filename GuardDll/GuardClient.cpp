@@ -9,6 +9,10 @@
 #include "GuardClient.h"
 #endif
 
+#ifndef _LOCAL_API_H
+#include "LocalAPI.h"
+#endif
+
 #ifndef _MESSAGE_DEFINE_H
 #include"MessageDefine.h"
 #endif
@@ -31,15 +35,13 @@
 struct sockaddr_in serverAddr;
 
 uint16_t serverPort = 0;    // 注入前patch为真实端口
-SOCKET serverSock = INVALID_SOCKET;
 char udpBuffer[UDP_BUFFER_SIZE];
 
 // Socket通信线程，接收server数据
 void ClientSocketThread()
 {
-    // printf("ServerPort: %d\n", serverPort);
     int retryTimes = 0;
-    uint16_t randPort;
+    SOCKET sock = INVALID_SOCKET;
 
     srand((uint32_t)time(0));
     // 设置服务器地址和端口
@@ -48,12 +50,10 @@ void ClientSocketThread()
     serverAddr.sin_port = htons(serverPort);
     inet_pton(AF_INET, SERVER_IP, &(serverAddr.sin_addr));
 
-    // 初始化socket
+    // 初始化socket 随机端口
     while (retryTimes++ < RETRY_TIMES)
     {
-        randPort = rand() % 0x10000;
-        if (randPort < 1024) randPort += 1024;
-        if (InitUdpSocket(&serverSock, randPort) == 0)
+        if (InitUdpSocket(&sock, 0) == 0)
         {
             retryTimes = 0;
             break;
@@ -73,9 +73,9 @@ void ClientSocketThread()
     retryTimes = 0;
     while (retryTimes++ < RETRY_TIMES)
     {
-        UdpSocketSend(&serverSock, (const char*)helloMsg, (size_t)helloMsg->data_length);
+        UdpSocketSend(&sock, (const char*)helloMsg, (size_t)helloMsg->data_length);
         memset(udpBuffer, 0, UDP_BUFFER_SIZE);
-        int recvBytes = recvfrom(serverSock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
+        int recvBytes = recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
         if (recvBytes != SOCKET_ERROR)
         {
             // 接收到服务端hello
@@ -92,6 +92,9 @@ void ClientSocketThread()
         // 关闭socket
         // 关闭所有Hook
         // 卸载DLL
+        CloseUdpSocket(&sock);
+        HookDetachAll();
+        UnloadInjectedDll();
     }
 
     // 设置hook(临时代码)
@@ -99,7 +102,7 @@ void ClientSocketThread()
 
     while (1)
     {
-        int recvBytes = recvfrom(serverSock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
+        int recvBytes = recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
         if (recvBytes == SOCKET_ERROR)
         {
             continue;
@@ -109,11 +112,26 @@ void ClientSocketThread()
         {
         case MSG_HELLO:
             break;
-        case MSG_STOP:
-            // 关闭socket
-            // 关闭所有Hook
-            // 卸载DLL
-            return;
+        case MSG_ATTACH:
+            break;
+        case MSG_DETACH:
+            break;
+        case MSG_CONFIG:
+            break;
+        case MSG_ENABLE:
+            break;
+        case MSG_UNLOAD:
+            // 卸载dll
+            HookDetachAll();
+            UnloadInjectedDll();
+            break;
+        case MSG_KILL:
+            // 结束进程
+            CloseUdpSocket(&sock);
+            HookDetachAll();
+            HANDLE hProcess = GetCurrentProcess();
+            TerminateProcess(hProcess, 0);
+            break;
         default:
             break;
         }
@@ -169,19 +187,20 @@ void CloseUdpSocket(SOCKET* sock)
     closesocket(*sock);
 }
 
-void UdpSocketSend(SOCKET* sock, const char * data, int dataLen)
+int UdpSocketSend(SOCKET* sock, const char * data, int dataLen)
 {
     int retryTimes = 0;
     while (retryTimes++ < RETRY_TIMES)
     {
         if (sendto(*sock, data, dataLen, 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) != SOCKET_ERROR)
         {
-            break;
+            return 0;
         }
     }
+    return -1;
 }
 
-void UdpSocketRecv(SOCKET* sock, char* data, int dataLen)
+int UdpSocketRecv(SOCKET* sock, char* data, int dataLen)
 {
     int retryTimes = 0;
     struct sockaddr from;
@@ -190,7 +209,37 @@ void UdpSocketRecv(SOCKET* sock, char* data, int dataLen)
     {
         if (recvfrom(*sock, data, dataLen, 0, &from, &fromLen) != SOCKET_ERROR)
         {
-            break;
+            return 0;
         }
     }
+    return -1;
+}
+
+// 用于发送并接收一次
+int UdpSendRecv(const char* sendBuffer, char* recvBuffer)
+{
+    int retryTimes = 0;
+    SOCKET sock = INVALID_SOCKET;
+    // 多发几次避免失败 实际上应该不可能失败
+    while (retryTimes++ < RETRY_TIMES)
+    {
+        if (InitUdpSocket(&sock, 0) != 0)
+        {
+            continue;
+        }
+        if (UdpSocketSend(&sock, sendBuffer, UDP_BUFFER_SIZE) != 0)
+        {
+            continue;
+        }
+        if (recvBuffer != NULL)
+        {
+            if (UdpSocketRecv(&sock, recvBuffer, UDP_BUFFER_SIZE) != 0)
+            {
+                continue;
+            }
+        }
+        return 0;
+    }
+    return -1;
+
 }

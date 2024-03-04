@@ -4,6 +4,10 @@
 #include "pch.h"
 #include <Windows.h>
 
+#ifndef _LOCAL_API_H
+#include "LocalAPI.h"
+#endif
+
 #ifndef _DETOURS_HOOK_H
 #include "DetoursHook.h"
 #endif
@@ -35,7 +39,7 @@ void HookDetach()
     DetourTransactionCommit();
 }
 
-DLL_EXPORT void HookDetachAll()
+void HookDetachAll()
 {
     HookDetach();
 }

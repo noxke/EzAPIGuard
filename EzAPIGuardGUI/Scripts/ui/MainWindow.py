@@ -1,6 +1,6 @@
 # 主窗口
 from PyQt6.QtWidgets import QMainWindow, QFileDialog
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QCoreApplication
 
 from . import __MainWindow
 from . import ProcessView
@@ -10,8 +10,19 @@ from . import AboutDialog
 # 导入EzGuardLib
 import os
 import sys
-sys.path.append(os.getcwd())
-import guardlib
+
+main_path = os.getcwd()
+scripts_path = os.path.join(main_path, "Scripts")
+sys.path.append(scripts_path)
+
+from guardlib import *
+
+CONFIG_OVERVIEW = 0
+CONFIG_SELECTED = 1
+
+MODE_ALLOW = 0
+MODE_REJECT = 1
+MODE_REQUEST = 2
 
 class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
     """主窗口"""
@@ -37,8 +48,19 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         # API请求消息框
         self.api_request_dialog = APIRequestDialog.Ui_Dialog()
 
+        # config显示模式 默认overview
+        self.config_mode = CONFIG_OVERVIEW
+
         # 初始化窗口布局
         self.view_reset()
+
+        # socket服务器
+        self.server = UdpSocketServer(RequestHandler=self.MsgHandler)
+        self.server_addr = self.server.server_addr
+        print(self.server_addr)
+        # 注入器
+        self.injector = Injector()
+        self.injector.init_dll(self.server_addr[1])
 
     def view_reset(self):
         """重置窗口布局"""
@@ -56,6 +78,9 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         self.recordTreeWidget.setColumnWidth(2, 60)
         header = self.recordTreeWidget.header()
         header.setSortIndicator(0, Qt.SortOrder.AscendingOrder)
+
+        # config界面默认显示overview
+        self.view_overview()
 
     def action_about(self):
         """about窗口"""
@@ -119,12 +144,20 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         pass
 
     def view_selected(self):
-        """切换view到选中的进程"""
-        pass
+        """切换config view到选中的进程"""
+        self.config_mode = CONFIG_SELECTED
+        self.selectedButton.setChecked(True)
+        self.overviewButton.setChecked(False)
+        self.processNameLabel_.setText(QCoreApplication.translate("MainWindow", "ProcessName:"))
+        self.processNameLabel.setText("test.exe")
 
     def view_overview(self):
-        """切换view到全局"""
-        pass
+        """切换config view到全局"""
+        self.config_mode = CONFIG_OVERVIEW
+        self.selectedButton.setChecked(False)
+        self.overviewButton.setChecked(True)
+        self.processNameLabel_.setText(QCoreApplication.translate("MainWindow", "ProcessNum:"))
+        self.processNameLabel.setText("11")
 
     def rules_config(self):
         """规则发生改变"""
@@ -138,11 +171,21 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         """停止hook进程"""
         pass
 
-    def kill_process(self):
-        """杀掉目标进程"""
-        pass
-
     def hook_unload(self):
         """卸载hook"""
         pass
 
+    def kill_process(self):
+        """杀掉目标进程"""
+        pass
+
+    def handle(self):
+        """处理UDP消息"""
+        data, socket = self.request
+        # 处理接收到的 UDP 数据
+        print("({} : {}".format(self.client_address, data.decode()))
+
+    class MsgHandler(UdpSocketServer.UDPHandler):
+        """UDP消息处理器"""
+        def handle(self):
+            super.handle()

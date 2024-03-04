@@ -14,6 +14,7 @@
 #define MSG_HOOKED 10   // api hook数据包
 #define MSG_ATTACH 11   // 配置hook指定api
 #define MSG_DETACH 12   // 配置取消hook指定api
+#define MSG_CONFIG 13   // api配置包来判断是否放行或者拦截api
 #define MSG_STOP 255    // 停止所有hook并退出
 
 // 定义API ID
@@ -29,14 +30,14 @@
 #define API_RegCloseKey 10
 #define API_RegOpenKeyEx 11
 #define API_RegDeleteValue 12
- 
+
 
 // 基础数据包
 struct udp_msg
 {
     uint16_t msg_type;
     uint16_t data_length;
-    uint8_t data[UDP_BUFFER_SIZE-4];
+    uint8_t data[UDP_BUFFER_SIZE - 4];
 };
 
 // api hook数据包 包含api参数信息
@@ -68,4 +69,13 @@ struct hello_msg
     uint16_t msg_type;
     uint16_t data_length;
     uint32_t process_pid;   // 进程PID信息
+};
+
+//config数据包
+struct api_config_msg
+{
+    uint16_t msg_type;
+    uint16_t api_id;
+    uint32_t process_pid;//进程PID信息
+    bool access;//是否放行
 };

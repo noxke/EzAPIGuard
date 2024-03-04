@@ -11,9 +11,9 @@ extern int (WINAPI* OldMessageBoxA)(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, 
 
 extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType);
 
-extern int (WINAPI* OldMessageBoxW)(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType);
+extern int (WINAPI* OldMessageBoxW)(_In_opt_ HWND hWnd, _In_opt_ LPCWSTR lpText, _In_opt_ LPCWSTR lpCaption, _In_ UINT uType);
 
-extern "C" __declspec(dllexport) int WINAPI NewMessageBoxW(_In_opt_ HWND hwnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType);
+extern "C" __declspec(dllexport) int WINAPI NewMessageBoxW(_In_opt_ HWND hwnd, _In_opt_ LPCWSTR lpText, _In_opt_ LPCWSTR lpCaption, _In_ UINT uType);
 
 //文件操作API的hook定义
 extern  HANDLE(WINAPI* OldCreateFile)(
@@ -24,7 +24,7 @@ extern  HANDLE(WINAPI* OldCreateFile)(
     DWORD                 dwCreationDisposition,
     DWORD                 dwFlagsAndAttributes,
     HANDLE                hTemplateFile
-);
+    );
 
 extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
     LPCWSTR               lpFileName,
@@ -42,9 +42,9 @@ extern BOOL(WINAPI* OldWriteFile)(
     DWORD        nNumberOfBytesToWrite,
     LPDWORD      lpNumberOfBytesWritten,
     LPOVERLAPPED lpOverlapped
-);
+    );
 
-extern "C" __declspec(dllexport)BOOL WINAPI NewReadFile(
+extern "C" __declspec(dllexport)BOOL WINAPI NewWriteFile(
     HANDLE       hFile,
     LPVOID       lpBuffer,
     DWORD        nNumberOfBytesToRead,
@@ -59,13 +59,13 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SI
 
 extern BOOL(WINAPI* OldHeapDestory)(HANDLE heap);
 
-extern "C" __declspec(dllexport) BOOL WINAPI NewHeapDestory(HANDLE hHeap);
+extern "C" __declspec(dllexport) BOOL WINAPI NewHeapDestroy(HANDLE hHeap);
 
 extern BOOL(WINAPI* OldHeapFree)(HANDLE hHeap, DWORD dwFlags, _Frees_ptr_opt_ LPVOID lpMem);
 
 extern "C" __declspec(dllexport) BOOL WINAPI NewHeapFree(HANDLE hHeap, DWORD dwFlags, _Frees_ptr_opt_ LPVOID lpMem);
 
-extern LPVOID(WINAPI* OldHeapAlloc)(HANDLE hHeap,DWORD  dwFlags,SIZE_T dwBytes);
+extern LPVOID(WINAPI* OldHeapAlloc)(HANDLE hHeap, DWORD  dwFlags, SIZE_T dwBytes);
 
 extern "C" __declspec(dllexport) LPVOID WINAPI NewHeapAlloc(HANDLE hHeap, DWORD  dwFlags, SIZE_T dwBytes);
 
@@ -82,7 +82,7 @@ extern LSTATUS(WINAPI* OldRegCreateKeyEx)(
     const LPSECURITY_ATTRIBUTES lpSecurityAttributes,
     PHKEY                       phkResult,
     LPDWORD                     lpdwDisposition
-);
+    );
 
 extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCreateKeyEx(
     HKEY                        hKey,
@@ -103,7 +103,7 @@ extern LSTATUS(WINAPI* OldRegSetValueEx)(
     DWORD      dwType,
     const BYTE* lpData,
     DWORD      cbData
-);
+    );
 
 extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegSetValueEx(
     HKEY       hKey,
@@ -124,7 +124,7 @@ extern LSTATUS(WINAPI* OldRegOpenKeyEx)(
     DWORD   ulOptions,
     REGSAM  samDesired,
     PHKEY   phkResult
-);
+    );
 
 extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
     HKEY    hKey,
@@ -137,15 +137,9 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
 extern LSTATUS(WINAPI* OldRegDeleteValue)(
     HKEY    hKey,
     LPCWSTR lpValueName
-);
+    );
 
 extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegDeleteValue(
     HKEY    hKey,
     LPCWSTR lpValueName
 );
-
-
-
-
-
-

@@ -3,6 +3,10 @@
 
 #include "pch.h"
 
+#ifndef _LOCAL_API_H
+#include "LocalAPI.h"
+#endif
+
 #ifndef _API_HOOK_H
 #include "APIHook.h"
 #endif
@@ -23,6 +27,7 @@
 #include <stdlib.h>
 
 
+int api_config[HOOK_API_NUM] = {HOOK_DISABLE,};
 
 struct api_hooked_msg* msg_HeapCreate = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
 struct api_hooked_msg* msg_HeapDestroy = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
@@ -31,14 +36,15 @@ struct api_hooked_msg* msg_HeapAlloc = (struct api_hooked_msg*)malloc(sizeof(udp
 
 int (WINAPI* OldMessageBoxA)(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType) = MessageBoxA;
 
+
 extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType)
 {
     printf("MessageBoxA hooked\n");
     // 以MessageBoxA为例，封装数据包
     // 字符串需要注意缓冲区长度
 
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-    struct api_config_msg* msg_config = (struct api_config_msg*)malloc(sizeof(api_config_msg));
+    struct api_hooked_msg* msg = (struct api_hooked_msg*)local_malloc();
+    BOOL allow = TRUE;
 
     if (msg != NULL)
     {
@@ -46,13 +52,13 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
         msg->arg_num = 3;   // uType参数不重要
         msg->process_pid = dwPid;
 
-        msg->api_id = API_MESSAGEBOXA;
+        msg->api_id = API_MessageBoxA;
 
         // p1指向参数列表
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -62,7 +68,7 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
         p2 += sizeof(hWnd);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg1:
+
         // arg1
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -71,7 +77,7 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
         p2 += snprintf((char*)msg + p2, sizeof(udp_msg) - p2, lpText);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg2:
+
         // arg2
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -83,26 +89,43 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
 
     arg_end:
         msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpUdpSocketRecv(&sock, (char*)msg_config, sizeof(msg_config));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldMessageBoxA(hWnd, lpText, lpCaption, uType);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
 
+        switch (api_config[API_MessageBoxA])
+        {
+        case HOOK_DISABLE:
+            allow = TRUE;
+            break;
+        case HOOK_ALLOW:
+            UdpSendRecv((const char *)msg, NULL);
+            allow = TRUE;
+            break;
+        case HOOK_REJECT:
+            UdpSendRecv((const char*)msg, NULL);
+            allow = FALSE;
+            break;
+        case HOOK_REQUEST:
+            UdpSendRecv((const char*)msg, (char*)msg);
+            if (((struct api_config_msg*)msg)->msg_type == MSG_REPLY \
+                && ((struct api_config_msg*)msg)->access == TRUE)
+            {
+                allow = TRUE;
+            }
+            else
+            {
+                allow = FALSE;
+            }
+            break;
+        }
+        local_free(msg);
     }
-
+    if (allow)
+    {
+        return OldMessageBoxA(hWnd, lpText, lpCaption, uType);
+    }
+    else
+    {
+        return IDCANCEL; // 返回窗口取消值
+    }
 }
 
 int (WINAPI* OldMessageBoxW)(_In_opt_ HWND hWnd, _In_opt_ LPCWSTR lpText, _In_opt_ LPCWSTR lpCaption, _In_ UINT uType) = MessageBoxW;
@@ -110,7 +133,6 @@ int (WINAPI* OldMessageBoxW)(_In_opt_ HWND hWnd, _In_opt_ LPCWSTR lpText, _In_op
 extern "C" __declspec(dllexport) int WINAPI NewMessageBoxW(_In_opt_ HWND hWnd, _In_opt_ LPCWSTR lpText, _In_opt_ LPCWSTR lpCaption, _In_ UINT uType)
 {
     printf("MessageBoxW hooked\n");
-    // 以MessageBoxA为例，封装数据包
     // 字符串需要注意缓冲区长度
 
     struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
@@ -121,13 +143,13 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxW(_In_opt_ HWND hWnd, _
         msg->arg_num = 3;   // uType参数不重要
         msg->process_pid = dwPid;
 
-        msg->api_id = API_MESSAGEBOXW;
+        msg->api_id = API_MessageBoxW;
 
         // p1指向参数列表
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -137,7 +159,7 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxW(_In_opt_ HWND hWnd, _
         p2 += sizeof(hWnd);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg1:
+
         // arg1
         char buffer[100];//用来转换宽字符
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -148,9 +170,8 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxW(_In_opt_ HWND hWnd, _
         p2 += snprintf((char*)msg + p2, sizeof(udp_msg) - p2, buffer);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg2:
-        // arg2
 
+        // arg2
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
         WideCharToMultiByte(CP_ACP, 0, lpCaption, -1, buffer, sizeof(buffer), NULL, NULL);
@@ -200,8 +221,8 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
     DWORD                 dwFlagsAndAttributes,
     HANDLE                hTemplateFile
 ) {
-    printf("CreateFile Hooked!\n"); \
-        struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
+    printf("CreateFile Hooked!\n");
+    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
     struct api_config_msg* msg_config = (struct api_config_msg*)malloc(sizeof(api_config_msg));
 
     if (msg != NULL)
@@ -215,7 +236,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         char buffer[100];
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -226,7 +247,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
         p2 += snprintf((char*)msg + p2, sizeof(udp_msg) - p2, buffer);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg1:
+
         // arg1
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -237,7 +258,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
 
-    arg2:
+
         // arg2
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -247,7 +268,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
         p2 += 4;
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg3:
+
         // arg3
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -257,7 +278,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
         p2 += 4;
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg4:
+
         // arg4
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -267,7 +288,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
         p2 += 4;
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg5:
+
         // arg5
         HANDLE heap;
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -320,7 +341,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SI
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -329,7 +350,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SI
         *(DWORD*)((uint8_t*)msg + p2) = fIOoptions;
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg1:
+
         // arg1
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -340,7 +361,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SI
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
 
-    arg2:
+
         // arg2
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -350,7 +371,7 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SI
         p2 += sizeof(SIZE_T);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg3:
+
         // arg3
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -402,7 +423,7 @@ extern "C" __declspec(dllexport) BOOL WINAPI NewHeapDestory(HANDLE hHeap)
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -452,7 +473,7 @@ extern "C" __declspec(dllexport) BOOL WINAPI NewHeapFree(HANDLE hHeap, DWORD dwF
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -461,7 +482,7 @@ extern "C" __declspec(dllexport) BOOL WINAPI NewHeapFree(HANDLE hHeap, DWORD dwF
         *(HANDLE*)((uint8_t*)msg + p2) = hHeap;
         p2 += sizeof(hHeap);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg1:
+
         // arg1
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -470,7 +491,7 @@ extern "C" __declspec(dllexport) BOOL WINAPI NewHeapFree(HANDLE hHeap, DWORD dwF
         *(DWORD*)((uint8_t*)msg + p2) = dwFlags;
         p2 += sizeof(DWORD);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg2:
+
         // arg2
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -522,7 +543,7 @@ extern "C" __declspec(dllexport) LPVOID WINAPI NewHeapAlloc(HANDLE hHeap, DWORD 
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -531,7 +552,7 @@ extern "C" __declspec(dllexport) LPVOID WINAPI NewHeapAlloc(HANDLE hHeap, DWORD 
         *(HANDLE*)((uint8_t*)msg + p2) = hHeap;
         p2 += sizeof(hHeap);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg1:
+
         // arg1
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -540,7 +561,7 @@ extern "C" __declspec(dllexport) LPVOID WINAPI NewHeapAlloc(HANDLE hHeap, DWORD 
         *(DWORD*)((uint8_t*)msg + p2) = dwFlags;
         p2 += sizeof(DWORD);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg2:
+
         // arg1
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -611,7 +632,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCreateKeyEx(
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -620,7 +641,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCreateKeyEx(
         *(HKEY*)((uint8_t*)msg + p2) = hKey;
         p2 += sizeof(HKEY);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg1:
+
         // arg1
         char buffer[100];
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -630,7 +651,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCreateKeyEx(
         p1 += 2;
         p2 += snprintf((char*)msg + p2, sizeof(udp_msg) - p2, buffer);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg2:
+
         // arg2
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -639,7 +660,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCreateKeyEx(
         *(REGSAM*)((uint8_t*)msg + p2) = samDesired;
         p2 += sizeof(REGSAM);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg3:
+
         //arg3
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -704,7 +725,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegSetValueEx(
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -713,7 +734,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegSetValueEx(
         *(HKEY*)((uint8_t*)msg + p2) = hKey;
         p2 += sizeof(HKEY);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg1:
+
         // arg1
         char buffer[100];
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -723,7 +744,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegSetValueEx(
         p1 += 2;
         p2 += snprintf((char*)msg + p2, sizeof(udp_msg) - p2, buffer);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg2:
+
         // arg2
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -733,7 +754,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegSetValueEx(
         p2 += sizeof(DWORD);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-    arg3:
+
         //arg4
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -785,7 +806,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCloseKey(HKEY hKey)
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -850,7 +871,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -859,7 +880,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
         *(HKEY*)((uint8_t*)msg + p2) = hKey;
         p2 += sizeof(HKEY);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg1:
+
         // arg1
         char buffer[100];
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -869,7 +890,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
         p1 += 2;
         p2 += snprintf((char*)msg + p2, sizeof(udp_msg) - p2, buffer);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg2:
+
         // arg2
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -878,7 +899,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
         *(DWORD*)((uint8_t*)msg + p2) = ulOptions;
         p2 += sizeof(DWORD);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg3:
+
         // arg3
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -887,7 +908,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
         *(REGSAM*)((uint8_t*)msg + p2) = samDesired;
         p2 += sizeof(REGSAM);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg4:
+
         //arg4
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -941,7 +962,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegDeleteValue(
         // p2指向参数
         uint16_t p1 = sizeof(struct api_hooked_msg);
         uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-    arg0:
+
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -950,7 +971,7 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegDeleteValue(
         *(HKEY*)((uint8_t*)msg + p2) = hKey;
         p2 += sizeof(HKEY);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg1:
+
         // arg1
         char buffer[100];
         *(uint16_t*)((uint8_t*)msg + p1) = p2;

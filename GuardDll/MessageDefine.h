@@ -12,24 +12,14 @@
 #define MSG_NONE 0  // 空数据包
 #define MSG_HELLO 1 // hello数据包 传输pid信息
 #define MSG_HOOKED 10   // api hook数据包
-#define MSG_ATTACH 11   // 配置hook指定api
-#define MSG_DETACH 12   // 配置取消hook指定api
-#define MSG_CONFIG 13   // api配置包来判断是否放行或者拦截api
-#define MSG_STOP 255    // 停止所有hook并退出
-
-// 定义API ID
-#define API_MESSAGEBOXA 1
-#define API_MESSAGEBOXW 2
-#define API_CreateFile 3
-#define API_HeapCreate 4
-#define API_HeapDestroy 5
-#define API_HeapFree 6
-#define API_HeapAlloc 7
-#define API_RegCreateKeyEx 8
-#define API_RegSetValueEx 9
-#define API_RegCloseKey 10
-#define API_RegOpenKeyEx 11
-#define API_RegDeleteValue 12
+#define MSG_REPLY 11    // hooked回复包
+#define MSG_ATTACH 20   // 配置hook指定api
+#define MSG_DETACH 21   // 配置取消hook指定api
+#define MSG_CONFIG 22   // api配置包来判断是否放行或者拦截api
+#define MSG_ENABLE 250    // 启用hook
+#define MSG_DISABLE 251   // 禁用hook
+#define MSG_UNLOAD 252    // 卸载dll
+#define MSG_KILL 255      // 关闭进程
 
 
 // 基础数据包

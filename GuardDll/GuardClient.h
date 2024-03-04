@@ -15,13 +15,17 @@
 
 // 导出端口，注入前将serverPort patch为真实端口
 DLL_EXPORT uint16_t serverPort;
-extern SOCKET serverSock;
+
 void ClientSocketThread();
 
 int InitUdpSocket(SOCKET *sock, uint16_t port);
 
 void CloseUdpSocket(SOCKET* sock);
 
-void UdpSocketSend(SOCKET* sock, const char* data, int dataLen);
+int UdpSocketSend(SOCKET* sock, const char* data, int dataLen);
 
-void UdpSocketRecv(SOCKET* sock, char* data, int dataLen);
+int UdpSocketRecv(SOCKET* sock, char* data, int dataLen);
+
+// 用于发送并接收一次 recvBuffer为NULL时不接收
+// 这里的sendBuffer和recvBuffer可以且建议用同一个
+int UdpSendRecv(const char *sendBuffer, char *recvBuffer);

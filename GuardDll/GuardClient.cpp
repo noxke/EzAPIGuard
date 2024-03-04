@@ -31,7 +31,7 @@
 struct sockaddr_in serverAddr;
 
 uint16_t serverPort = 0;    // 注入前patch为真实端口
-
+SOCKET serverSock = INVALID_SOCKET;
 char udpBuffer[UDP_BUFFER_SIZE];
 
 // Socket通信线程，接收server数据
@@ -40,7 +40,6 @@ void ClientSocketThread()
     // printf("ServerPort: %d\n", serverPort);
     int retryTimes = 0;
     uint16_t randPort;
-    SOCKET sock = INVALID_SOCKET;
 
     srand((uint32_t)time(0));
     // 设置服务器地址和端口
@@ -54,7 +53,7 @@ void ClientSocketThread()
     {
         randPort = rand() % 0x10000;
         if (randPort < 1024) randPort += 1024;
-        if (InitUdpSocket(&sock, randPort) == 0)
+        if (InitUdpSocket(&serverSock, randPort) == 0)
         {
             retryTimes = 0;
             break;
@@ -74,9 +73,9 @@ void ClientSocketThread()
     retryTimes = 0;
     while (retryTimes++ < RETRY_TIMES)
     {
-        UdpSocketSend(&sock, (const char*)helloMsg, (size_t)helloMsg->data_length);
+        UdpSocketSend(&serverSock, (const char*)helloMsg, (size_t)helloMsg->data_length);
         memset(udpBuffer, 0, UDP_BUFFER_SIZE);
-        int recvBytes = recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
+        int recvBytes = recvfrom(serverSock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
         if (recvBytes != SOCKET_ERROR)
         {
             // 接收到服务端hello
@@ -100,7 +99,7 @@ void ClientSocketThread()
 
     while (1)
     {
-        int recvBytes = recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
+        int recvBytes = recvfrom(serverSock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
         if (recvBytes == SOCKET_ERROR)
         {
             continue;
@@ -176,6 +175,20 @@ void UdpSocketSend(SOCKET* sock, const char * data, int dataLen)
     while (retryTimes++ < RETRY_TIMES)
     {
         if (sendto(*sock, data, dataLen, 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) != SOCKET_ERROR)
+        {
+            break;
+        }
+    }
+}
+
+void UdpSocketRecv(SOCKET* sock, char* data, int dataLen)
+{
+    int retryTimes = 0;
+    struct sockaddr from;
+    int fromLen;
+    while (retryTimes++ < RETRY_TIMES)
+    {
+        if (recvfrom(*sock, data, dataLen, 0, &from, &fromLen) != SOCKET_ERROR)
         {
             break;
         }

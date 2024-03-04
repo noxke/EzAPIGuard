@@ -8,10 +8,6 @@
 #include "Injector.h"
 #endif
 
-#ifndef _GUARD_SERVER_H
-#include "GuardServer.h"
-#endif
-
 #ifndef _LOG_H
 #include "Log.h"
 #endif
@@ -27,10 +23,10 @@
 #include <stdlib.h>
 
 
-uint64_t LoadLibraryAoff86 = 0;
-uint64_t LoadLibraryAoff64 = 0;
+uint64_t LoadLibraryArva86 = 0;
+uint64_t LoadLibraryArva64 = 0;
 
-BOOL InjectByPID(uint32_t dwPID, const char* dllPath)
+DLL_EXPORT BOOL InjectByPID(uint32_t dwPID, const char* dllPath)
 {
     HANDLE hProcess = NULL;
     HANDLE hThread = NULL;
@@ -83,12 +79,12 @@ BOOL InjectByPID(uint32_t dwPID, const char* dllPath)
         if (isWow64)
         {
             // 32位程序
-            pThreadProc = (uint64_t)hMod + LoadLibraryAoff86;
+            pThreadProc = (uint64_t)hMod + LoadLibraryArva86;
         }
         else
         {
             // 64位程序
-            pThreadProc = (uint64_t)hMod + LoadLibraryAoff64;
+            pThreadProc = (uint64_t)hMod + LoadLibraryArva64;
         }
     }
     else
@@ -127,7 +123,7 @@ BOOL InjectByPID(uint32_t dwPID, const char* dllPath)
     return TRUE;
 }
 
-BOOL RunInject(const char* exePath, char* cmdLine, const char* dllPath)
+DLL_EXPORT uint32_t RunInject(const char* exePath, char* cmdLine, const char* dllPath)
 {
     DWORD dwPID = 0;
     STARTUPINFOA si;

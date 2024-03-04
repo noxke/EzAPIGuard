@@ -64,56 +64,80 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NMakeBuildCommandLine>SET PLANTFORM=$(PlatformTarget)
+    <NMakeBuildCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
 nmake</NMakeBuildCommandLine>
     <NMakeOutput>EzAPIGuard.exe</NMakeOutput>
-    <NMakeCleanCommandLine>SET PLANTFORM=$(PlatformTarget)
-SET CONFIG=$(Configuration)
-nmake clean</NMakeCleanCommandLine>
-    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeReBuildCommandLine>SET PLANTFORM=$(PlatformTarget)
+    <NMakeCleanCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
 nmake clean
-nmake</NMakeReBuildCommandLine>
+name</NMakeCleanCommandLine>
+    <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeReBuildCommandLine>SET PLATFORM=$(PlatformTarget)
+SET CONFIG=$(Configuration)
+nmake clean</NMakeReBuildCommandLine>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <NMakeBuildCommandLine>SET PLANTFORM=$(PlatformTarget)
+    <NMakeBuildCommandLine>SET PLATFORM=$(PlatformTarget)
+SET CONFIG=$(Configuration)
 nmake</NMakeBuildCommandLine>
     <NMakeOutput>EzAPIGuard.exe</NMakeOutput>
-    <NMakeCleanCommandLine>SET PLANTFORM=$(PlatformTarget)
-nmake clean</NMakeCleanCommandLine>
-    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeReBuildCommandLine>SET PLANTFORM=$(PlatformTarget)
+    <NMakeCleanCommandLine>SET PLATFORM=$(PlatformTarget)
+SET CONFIG=$(Configuration)
 nmake clean
-nmake</NMakeReBuildCommandLine>
+name</NMakeCleanCommandLine>
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeReBuildCommandLine>SET PLATFORM=$(PlatformTarget)
+SET CONFIG=$(Configuration)
+nmake clean</NMakeReBuildCommandLine>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <NMakeBuildCommandLine>SET PLANTFORM=$(PlatformTarget)
+    <NMakeBuildCommandLine>SET PLATFORM=$(PlatformTarget)
+SET CONFIG=$(Configuration)
 nmake</NMakeBuildCommandLine>
     <NMakeOutput>EzAPIGuard.exe</NMakeOutput>
-    <NMakeCleanCommandLine>SET PLANTFORM=$(PlatformTarget)
-nmake clean</NMakeCleanCommandLine>
-    <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeReBuildCommandLine>SET PLANTFORM=$(PlatformTarget)
+    <NMakeCleanCommandLine>SET PLATFORM=$(PlatformTarget)
+SET CONFIG=$(Configuration)
 nmake clean
-nmake</NMakeReBuildCommandLine>
+name</NMakeCleanCommandLine>
+    <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeReBuildCommandLine>SET PLATFORM=$(PlatformTarget)
+SET CONFIG=$(Configuration)
+nmake clean</NMakeReBuildCommandLine>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NMakeBuildCommandLine>SET PLANTFORM=$(PlatformTarget)
+    <NMakeBuildCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
 nmake</NMakeBuildCommandLine>
     <NMakeOutput>EzAPIGuard.exe</NMakeOutput>
-    <NMakeCleanCommandLine>SET PLANTFORM=$(PlatformTarget)
-SET CONFIG=$(Configuration)
-nmake clean</NMakeCleanCommandLine>
-    <NMakePreprocessorDefinitions>NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeReBuildCommandLine>SET PLANTFORM=$(PlatformTarget)
+    <NMakeCleanCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
 nmake clean
-nmake</NMakeReBuildCommandLine>
+name</NMakeCleanCommandLine>
+    <NMakePreprocessorDefinitions>NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeReBuildCommandLine>SET PLATFORM=$(PlatformTarget)
+SET CONFIG=$(Configuration)
+nmake clean</NMakeReBuildCommandLine>
   </PropertyGroup>
-  <ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <BuildLog>
+      <Path>$(SolutionDir)build\$(MSBuildProjectName).log</Path>
+    </BuildLog>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <BuildLog>
+      <Path>$(SolutionDir)build\$(MSBuildProjectName).log</Path>
+    </BuildLog>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <BuildLog>
+      <Path>$(SolutionDir)build\$(MSBuildProjectName).log</Path>
+    </BuildLog>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <BuildLog>
+      <Path>$(SolutionDir)build\$(MSBuildProjectName).log</Path>
+    </BuildLog>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="main.py" />

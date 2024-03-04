@@ -72,15 +72,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>..\GuardDll;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)output\EzAPIGuard\</OutDir>
+    <IntDir>$(SolutionDir)build\$(PlatformTarget)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>..\GuardDll;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)output\EzAPIGuard\</OutDir>
+    <IntDir>$(SolutionDir)build\$(PlatformTarget)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>..\GuardDll;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)output\EzAPIGuard\</OutDir>
+    <IntDir>$(SolutionDir)build\$(PlatformTarget)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>..\GuardDll;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)output\EzAPIGuard\</OutDir>
+    <IntDir>$(SolutionDir)build\$(PlatformTarget)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -153,14 +161,12 @@
   <ItemGroup>
     <ClInclude Include="EzGuardLib.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="GuardServer.h" />
     <ClInclude Include="Injector.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="GuardServer.cpp" />
     <ClCompile Include="Injector.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="pch.cpp">

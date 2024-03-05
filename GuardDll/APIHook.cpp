@@ -3,10 +3,6 @@
 
 #include "pch.h"
 
-#ifndef _LOCAL_API_H
-#include "LocalAPI.h"
-#endif
-
 #ifndef _API_HOOK_H
 #include "APIHook.h"
 #endif
@@ -25,39 +21,75 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 
-int api_config[HOOK_API_NUM] = {HOOK_DISABLE,};
+// 定义宏用于处理API操作
+#define API_HOOK_BEGIN_MACRO(_api_id)\
+struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(UDP_BUFFER_SIZE);\
+BOOL allow = TRUE;\
+if (api_config[_api_id] == HOOK_DISABLE) allow = FALSE;\
+if (allow && msg != NULL)\
+{\
+    msg->msg_type = MSG_HOOKED;\
+    msg->process_pid = dwPid;\
+    msg->time = time(0);\
+    msg->api_id = _api_id;\
+    uint16_t p1 = 0;\
+    uint16_t p2 = 0;\
 
-struct api_hooked_msg* msg_HeapCreate = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-struct api_hooked_msg* msg_HeapDestroy = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-struct api_hooked_msg* msg_HeapFree = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-struct api_hooked_msg* msg_HeapAlloc = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
+/*
+    中间是参数处理 在函数内完成
+*/
+
+#define API_HOOK_END_MACRO(_api_id)\
+arg_end:\
+    msg->data_length = p2;\
+    switch (api_config[_api_id])\
+    {\
+    case HOOK_DISABLE:\
+        allow = TRUE;\
+        break;\
+    case HOOK_ALLOW:\
+        UdpSendRecv((char*)msg, msg->data_length, FALSE);\
+        allow = TRUE;\
+        break;\
+    case HOOK_REJECT:\
+        UdpSendRecv((char*)msg, msg->data_length, FALSE);\
+        allow = FALSE;\
+        break;\
+    case HOOK_REQUEST:\
+        UdpSendRecv((char*)msg, msg->data_length, TRUE);\
+        if (((struct api_config_msg*)msg)->msg_type == MSG_REPLY && ((struct api_config_msg*)msg)->access == TRUE)\
+        {\
+            allow = TRUE;\
+        }\
+        else\
+        {\
+            allow = FALSE;\
+        }\
+        break;\
+    }\
+}\
+free(msg);\
+
+// 末尾是原函数执行或绕过
+
+
+int api_config[HOOK_API_NUM] = {HOOK_ALLOW,};
+
 
 int (WINAPI* OldMessageBoxA)(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType) = MessageBoxA;
 
-
-extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType)
+DLL_EXPORT int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType)
 {
-    printf("MessageBoxA hooked\n");
-    // 以MessageBoxA为例，封装数据包
-    // 字符串需要注意缓冲区长度
-
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)local_malloc();
-    BOOL allow = TRUE;
-
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
-        msg->arg_num = 3;   // uType参数不重要
-        msg->process_pid = dwPid;
-
-        msg->api_id = API_MessageBoxA;
+    API_HOOK_BEGIN_MACRO(API_MessageBoxA);
+        msg->arg_num = 3;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -86,38 +118,8 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
 
         p2 += snprintf((char*)msg + p2, sizeof(udp_msg) - p2, lpCaption);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
+    API_HOOK_END_MACRO(API_MessageBoxA);
 
-    arg_end:
-        msg->data_length = p2;
-
-        switch (api_config[API_MessageBoxA])
-        {
-        case HOOK_DISABLE:
-            allow = TRUE;
-            break;
-        case HOOK_ALLOW:
-            UdpSendRecv((const char *)msg, NULL);
-            allow = TRUE;
-            break;
-        case HOOK_REJECT:
-            UdpSendRecv((const char*)msg, NULL);
-            allow = FALSE;
-            break;
-        case HOOK_REQUEST:
-            UdpSendRecv((const char*)msg, (char*)msg);
-            if (((struct api_config_msg*)msg)->msg_type == MSG_REPLY \
-                && ((struct api_config_msg*)msg)->access == TRUE)
-            {
-                allow = TRUE;
-            }
-            else
-            {
-                allow = FALSE;
-            }
-            break;
-        }
-        local_free(msg);
-    }
     if (allow)
     {
         return OldMessageBoxA(hWnd, lpText, lpCaption, uType);
@@ -130,25 +132,15 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _
 
 int (WINAPI* OldMessageBoxW)(_In_opt_ HWND hWnd, _In_opt_ LPCWSTR lpText, _In_opt_ LPCWSTR lpCaption, _In_ UINT uType) = MessageBoxW;
 
-extern "C" __declspec(dllexport) int WINAPI NewMessageBoxW(_In_opt_ HWND hWnd, _In_opt_ LPCWSTR lpText, _In_opt_ LPCWSTR lpCaption, _In_ UINT uType)
+DLL_EXPORT int WINAPI NewMessageBoxW(_In_opt_ HWND hWnd, _In_opt_ LPCWSTR lpText, _In_opt_ LPCWSTR lpCaption, _In_ UINT uType)
 {
-    printf("MessageBoxW hooked\n");
-    // 字符串需要注意缓冲区长度
-
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-    struct api_config_msg* msg_config = (struct api_config_msg*)malloc(sizeof(api_config_msg));
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
-        msg->arg_num = 3;   // uType参数不重要
-        msg->process_pid = dwPid;
-
-        msg->api_id = API_MessageBoxW;
+    API_HOOK_BEGIN_MACRO(API_MessageBoxW);
+        msg->arg_num = 3;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -179,26 +171,15 @@ extern "C" __declspec(dllexport) int WINAPI NewMessageBoxW(_In_opt_ HWND hWnd, _
         p1 += 2;
         p2 += snprintf((char*)msg + p2, sizeof(udp_msg) - p2, buffer);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
+    API_HOOK_END_MACRO(API_MessageBoxW);
 
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldMessageBoxW(hWnd, lpText, lpCaption, uType);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
+    if (allow)
+    {
+        return OldMessageBoxW(hWnd, lpText, lpCaption, uType);
+    }
+    else
+    {
+        return IDCANCEL; // 返回窗口取消值
     }
 }
 
@@ -212,7 +193,7 @@ HANDLE(WINAPI* OldCreateFile)(
     HANDLE                hTemplateFile
     ) = CreateFile;
 
-extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
+DLL_EXPORT HANDLE WINAPI NewCreateFile(
     LPCWSTR               lpFileName,
     DWORD                 dwDesiredAccess,
     DWORD                 dwShareMode,
@@ -221,21 +202,13 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
     DWORD                 dwFlagsAndAttributes,
     HANDLE                hTemplateFile
 ) {
-    printf("CreateFile Hooked!\n");
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-    struct api_config_msg* msg_config = (struct api_config_msg*)malloc(sizeof(api_config_msg));
-
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
+    API_HOOK_BEGIN_MACRO(API_CreateFile);
         msg->arg_num = 6;
-        msg->process_pid = dwPid;
-        msg->api_id = API_CreateFile;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         char buffer[100];
@@ -256,7 +229,6 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
         *(DWORD*)((uint8_t*)msg + p2) = dwDesiredAccess;
         p2 += 4;
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-
 
 
         // arg2
@@ -299,48 +271,88 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewCreateFile(
         *(HANDLE*)((uint8_t*)msg + p2) = heap;
         p2 += 4;
         if (p2 >= sizeof(udp_msg)) goto arg_end;
+    API_HOOK_END_MACRO(API_CreateFile);
 
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldCreateFile(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
+    if (allow)
+    {
+        return OldCreateFile(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+    }
+    else
+    {
+        return INVALID_HANDLE_VALUE;
+    }
+}
+
+BOOL(WINAPI* OldReadFile)(
+    HANDLE       hFile,
+    LPVOID       lpBuffer,
+    DWORD        nNumberOfBytesToRead,
+    LPDWORD      lpNumberOfBytesRead,
+    LPOVERLAPPED lpOverlapped
+    ) = ReadFile;
+
+DLL_EXPORT BOOL WINAPI NewReadFile(
+    HANDLE       hFile,
+    LPVOID       lpBuffer,
+    DWORD        nNumberOfBytesToRead,
+    LPDWORD      lpNumberOfBytesRead,
+    LPOVERLAPPED lpOverlapped
+) {
+    API_HOOK_BEGIN_MACRO(API_ReadFile);
+        msg->arg_num = 3;
+    API_HOOK_END_MACRO(API_ReadFile);
+
+    if (allow)
+    {
+        return OldReadFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
+BOOL(WINAPI* OldWriteFile)(
+    HANDLE       hFile,
+    LPCVOID      lpBuffer,
+    DWORD        nNumberOfBytesToWrite,
+    LPDWORD      lpNumberOfBytesWritten,
+    LPOVERLAPPED lpOverlapped
+    ) = WriteFile;
+
+DLL_EXPORT BOOL WINAPI NewWriteFile(
+    HANDLE       hFile,
+    LPCVOID      lpBuffer,
+    DWORD        nNumberOfBytesToWrite,
+    LPDWORD      lpNumberOfBytesWritten,
+    LPOVERLAPPED lpOverlapped
+) {
+    API_HOOK_BEGIN_MACRO(API_WriteFile);
+        msg->arg_num = 3;
+    API_HOOK_END_MACRO(API_WriteFile);
+
+    if (allow)
+    {
+        return OldWriteFile(hFile, lpBuffer, nNumberOfBytesToWrite, lpNumberOfBytesWritten, lpOverlapped);
+    }
+    else
+    {
+        return FALSE;
     }
 }
 
 HANDLE(WINAPI* OldHeapCreate)(DWORD fIOoptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize) = HeapCreate;
 
-extern "C" __declspec(dllexport)HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
+DLL_EXPORT HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
 {
-    printf("HeapCreate Hooked!\n");
-    HANDLE hHeap;
-    struct api_hooked_msg* msg = msg_HeapCreate;
-    struct api_config_msg* msg_config;
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
+    API_HOOK_BEGIN_MACRO(API_HeapCreate);
         msg->arg_num = 4;
-        msg->process_pid = dwPid;
-        msg->api_id = API_HeapCreate;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        HANDLE _hHeap = NULL;
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -360,8 +372,6 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SI
         p2 += sizeof(SIZE_T);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-
-
         // arg2
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
@@ -371,58 +381,38 @@ extern "C" __declspec(dllexport)HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SI
         p2 += sizeof(SIZE_T);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
 
-
         // arg3
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
         p1 += 2;
         *(uint16_t*)((uint8_t*)msg + p1) = sizeof(HANDLE);
         p1 += 2;
-        //调用OldCreateFile
-        hHeap = OldHeapCreate(fIOoptions, dwInitialSize, dwMaximumSize);
-        *(HANDLE*)((uint8_t*)msg + p2) = hHeap;
+        //调用OldHeapCreate
+        _hHeap = OldHeapCreate(fIOoptions, dwInitialSize, dwMaximumSize);
+        *(HANDLE*)((uint8_t*)msg + p2) = _hHeap;
         p2 += sizeof(HANDLE);
-        if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return hHeap;
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
-        ;
+    API_HOOK_END_MACRO(API_HeapCreate);
+
+    if (allow)
+    {
+        return OldHeapCreate(fIOoptions, dwInitialSize, dwMaximumSize);
+    }
+    else
+    {
+        return NULL;
     }
 }
 
 BOOL(WINAPI* OldHeapDestroy)(HANDLE heap) = HeapDestroy;
 
-extern "C" __declspec(dllexport) BOOL WINAPI NewHeapDestory(HANDLE hHeap)
+DLL_EXPORT BOOL WINAPI NewHeapDestroy(HANDLE hHeap)
 {
-    printf("HeapDestroy Hooked!\n");
-    struct api_hooked_msg* msg = msg_HeapDestroy;
-    struct api_config_msg* msg_config;
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
+    API_HOOK_BEGIN_MACRO(API_HeapDestroy);
         msg->arg_num = 1;
-        msg->process_pid = dwPid;
-        msg->api_id = API_HeapDestroy;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -431,48 +421,29 @@ extern "C" __declspec(dllexport) BOOL WINAPI NewHeapDestory(HANDLE hHeap)
         p1 += 2;
         *(HANDLE*)((uint8_t*)msg + p2) = hHeap;
         p2 += sizeof(hHeap);
-        if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldHeapDestroy(hHeap);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
-    }
+    API_HOOK_END_MACRO(API_HeapDestroy);
 
+    if (allow)
+    {
+        return OldHeapDestroy(hHeap);
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 BOOL(WINAPI* OldHeapFree)(HANDLE hHeap, DWORD dwFlags, _Frees_ptr_opt_ LPVOID lpMem) = HeapFree;
 
-extern "C" __declspec(dllexport) BOOL WINAPI NewHeapFree(HANDLE hHeap, DWORD dwFlags, _Frees_ptr_opt_ LPVOID lpMem)
+DLL_EXPORT BOOL WINAPI NewHeapFree(HANDLE hHeap, DWORD dwFlags, _Frees_ptr_opt_ LPVOID lpMem)
 {
-    printf("HeapFree Hooked!\n");
-    struct api_hooked_msg* msg = msg_HeapFree;
-    struct api_config_msg* msg_config;
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
+    API_HOOK_BEGIN_MACRO(API_HeapFree);
         msg->arg_num = 3;
-        msg->process_pid = dwPid;
-        msg->api_id = API_HeapFree;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -501,97 +472,35 @@ extern "C" __declspec(dllexport) BOOL WINAPI NewHeapFree(HANDLE hHeap, DWORD dwF
         p2 += sizeof(lpMem);
 
         if (p2 >= sizeof(udp_msg)) goto arg_end;
+    API_HOOK_END_MACRO(API_HeapFree);
 
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldHeapFree(hHeap, dwFlags, lpMem);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
-
+    if (allow)
+    {
+        return OldHeapFree(hHeap, dwFlags, lpMem);
+    }
+    else
+    {
+        return 0;
     }
 }
 
 LPVOID(WINAPI* OldHeapAlloc)(HANDLE hHeap, DWORD  dwFlags, SIZE_T dwBytes) = HeapAlloc;
 
-extern "C" __declspec(dllexport) LPVOID WINAPI NewHeapAlloc(HANDLE hHeap, DWORD  dwFlags, SIZE_T dwBytes)
+DLL_EXPORT LPVOID WINAPI NewHeapAlloc(HANDLE hHeap, DWORD  dwFlags, SIZE_T dwBytes)
 {
-    printf("HeapAlloc Hooked!\n");
-    struct api_hooked_msg* msg = msg_HeapAlloc;
-    struct api_config_msg* msg_config;
-    if (msg != NULL)
+    API_HOOK_BEGIN_MACRO(API_HeapAlloc);
+        // 不hook该函数
+        // never here
+    API_HOOK_END_MACRO(API_HeapAlloc);
+
+    if (allow)
     {
-        msg->msg_type = MSG_HOOKED;
-        msg->arg_num = 3;
-        msg->process_pid = dwPid;
-        msg->api_id = API_HeapAlloc;
-
-        // p1指向参数列表
-        // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
-
-        // arg0
-        *(uint16_t*)((uint8_t*)msg + p1) = p2;
-        p1 += 2;
-        *(uint16_t*)((uint8_t*)msg + p1) = sizeof(HANDLE);
-        p1 += 2;
-        *(HANDLE*)((uint8_t*)msg + p2) = hHeap;
-        p2 += sizeof(hHeap);
-        if (p2 >= sizeof(udp_msg)) goto arg_end;
-
-        // arg1
-        *(uint16_t*)((uint8_t*)msg + p1) = p2;
-        p1 += 2;
-        *(uint16_t*)((uint8_t*)msg + p1) = sizeof(DWORD);
-        p1 += 2;
-        *(DWORD*)((uint8_t*)msg + p2) = dwFlags;
-        p2 += sizeof(DWORD);
-        if (p2 >= sizeof(udp_msg)) goto arg_end;
-
-        // arg1
-        *(uint16_t*)((uint8_t*)msg + p1) = p2;
-        p1 += 2;
-        *(uint16_t*)((uint8_t*)msg + p1) = sizeof(SIZE_T);
-        p1 += 2;
-        *(SIZE_T*)((uint8_t*)msg + p2) = dwBytes;
-        p2 += sizeof(SIZE_T);
-        if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldHeapAlloc(hHeap, dwFlags, dwBytes);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
-
+        return OldHeapAlloc(hHeap, dwFlags, dwBytes);
     }
-
+    else
+    {
+        return NULL;
+    }
 }
 
 extern LSTATUS(WINAPI* OldRegCreateKeyEx)(
@@ -606,7 +515,7 @@ extern LSTATUS(WINAPI* OldRegCreateKeyEx)(
     LPDWORD                     lpdwDisposition
     ) = RegCreateKeyEx;
 
-extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCreateKeyEx(
+DLL_EXPORT LSTATUS WINAPI NewRegCreateKeyEx(
     HKEY                        hKey,
     LPCWSTR                     lpSubKey,
     DWORD                       Reserved,
@@ -618,20 +527,13 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCreateKeyEx(
     LPDWORD                     lpdwDisposition
 )
 {
-    printf("RegCreateKeyEx Hooked!\n");
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-    struct api_config_msg* msg_config;
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
+    API_HOOK_BEGIN_MACRO(API_RegCreateKeyEx);
         msg->arg_num = 4;
-        msg->process_pid = dwPid;
-        msg->api_id = API_RegCreateKeyEx;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -669,28 +571,16 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCreateKeyEx(
         *(PHKEY*)((uint8_t*)msg + p2) = phkResult;
         p2 += sizeof(PHKEY);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldRegCreateKeyEx(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
+    API_HOOK_END_MACRO(API_RegCreateKeyEx);
+
+    if (allow)
+    {
+        return OldRegCreateKeyEx(hKey, lpSubKey, Reserved, lpClass, dwOptions, samDesired, lpSecurityAttributes, phkResult, lpdwDisposition);
     }
-
-
+    else
+    {
+        return ERROR_SUCCESS;
+    }
 }
 
 LSTATUS(WINAPI* OldRegSetValueEx)(
@@ -702,7 +592,7 @@ LSTATUS(WINAPI* OldRegSetValueEx)(
     DWORD      cbData
     ) = RegSetValueEx;
 
-extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegSetValueEx(
+DLL_EXPORT LSTATUS WINAPI NewRegSetValueEx(
     HKEY       hKey,
     LPCWSTR    lpValueName,
     DWORD      Reserved,
@@ -711,20 +601,13 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegSetValueEx(
     DWORD      cbData
 )
 {
-    printf("RegSetValueEx Hooked!\n");
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-    struct api_config_msg* msg_config;
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
+    API_HOOK_BEGIN_MACRO(API_RegSetValueEx);
         msg->arg_num = 4;
-        msg->process_pid = dwPid;
-        msg->api_id = API_RegSetValueEx;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -762,50 +645,29 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegSetValueEx(
         p1 += 2;
         *(DWORD*)((uint8_t*)msg + p2) = cbData;
         p2 += sizeof(DWORD);
-        if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldRegSetValueEx(hKey, lpValueName, Reserved, dwType, lpData, cbData);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
+    API_HOOK_END_MACRO(API_RegSetValueEx);
 
+    if (allow)
+    {
+        return OldRegSetValueEx(hKey, lpValueName, Reserved, dwType, lpData, cbData);
     }
-
-
+    else
+    {
+        return ERROR_SUCCESS;
+    }
 }
 
 LSTATUS(WINAPI* OldRegCloseKey)(HKEY hKey) = RegCloseKey;
 
-extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCloseKey(HKEY hKey)
+DLL_EXPORT LSTATUS WINAPI NewRegCloseKey(HKEY hKey)
 {
-    printf("RegCloseKey Hooked!\n");
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-    struct api_config_msg* msg_config;
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
+    API_HOOK_BEGIN_MACRO(API_RegCloseKey);
         msg->arg_num = 1;
-        msg->process_pid = dwPid;
-        msg->api_id = API_RegCloseKey;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -814,31 +676,16 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegCloseKey(HKEY hKey)
         p1 += 2;
         *(HKEY*)((uint8_t*)msg + p2) = hKey;
         p2 += sizeof(HKEY);
-        if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(msg_config));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldRegCloseKey(hKey);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
+    API_HOOK_END_MACRO(API_RegCloseKey);
 
-
+    if (allow)
+    {
+        return OldRegCloseKey(hKey);
     }
-
-
+    else
+    {
+        return ERROR_SUCCESS;
+    }
 }
 
 LSTATUS(WINAPI* OldRegOpenKeyEx)(
@@ -849,7 +696,7 @@ LSTATUS(WINAPI* OldRegOpenKeyEx)(
     PHKEY   phkResult
     ) = RegOpenKeyEx;
 
-extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
+DLL_EXPORT LSTATUS WINAPI NewRegOpenKeyEx(
     HKEY    hKey,
     LPCWSTR lpSubKey,
     DWORD   ulOptions,
@@ -857,20 +704,13 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
     PHKEY   phkResult
 )
 {
-    printf("RegOpenKeyEx Hooked!\n");
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-    struct api_config_msg* msg_config;
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
+    API_HOOK_BEGIN_MACRO(API_RegOpenKeyEx);
         msg->arg_num = 5;
-        msg->process_pid = dwPid;
-        msg->api_id = API_RegOpenKeyEx;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -916,52 +756,32 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegOpenKeyEx(
         p1 += 2;
         *(PHKEY*)((uint8_t*)msg + p2) = phkResult;
         p2 += sizeof(PHKEY);
-        if (p2 >= sizeof(udp_msg)) goto arg_end;
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldRegOpenKeyEx(hKey, lpSubKey, ulOptions, samDesired, phkResult);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
+    API_HOOK_END_MACRO(API_RegOpenKeyEx);
 
+    if (allow)
+    {
+        return OldRegOpenKeyEx(hKey, lpSubKey, ulOptions, samDesired, phkResult);
     }
-
+    else
+    {
+        return ERROR_SUCCESS;
+    }
 }
 
 extern LSTATUS(WINAPI* OldRegDeleteValue)(HKEY hKey, LPCWSTR lpValueName) = RegDeleteValue;
 
-extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegDeleteValue(
+DLL_EXPORT LSTATUS WINAPI NewRegDeleteValue(
     HKEY    hKey,
     LPCWSTR lpValueName
 )
 {
-    printf("RegDeleteValue Hooked!\n");
-    struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(sizeof(udp_msg));
-    struct api_config_msg* msg_config;
-    if (msg != NULL)
-    {
-        msg->msg_type = MSG_HOOKED;
+    API_HOOK_BEGIN_MACRO(API_RegDeleteValue);
         msg->arg_num = 2;
-        msg->process_pid = dwPid;
-        msg->api_id = API_RegDeleteValue;
 
         // p1指向参数列表
         // p2指向参数
-        uint16_t p1 = sizeof(struct api_hooked_msg);
-        uint16_t p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
+        p1 = sizeof(struct api_hooked_msg);
+        p2 = p1 + msg->arg_num * (sizeof(uint16_t) * 2);
 
         // arg0
         *(uint16_t*)((uint8_t*)msg + p1) = p2;
@@ -981,27 +801,157 @@ extern "C" __declspec(dllexport)LSTATUS WINAPI NewRegDeleteValue(
         p1 += 2;
         p2 += snprintf((char*)msg + p2, sizeof(udp_msg) - p2, buffer);
         if (p2 >= sizeof(udp_msg)) goto arg_end;
+    API_HOOK_END_MACRO(API_RegDeleteValue);
 
-    arg_end:
-        msg->data_length = p2;
-        // 使用socket发送api信息
-        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
-        // 使用socket接受
-        UdpSocketRecv(&sock, (char*)msg_config, sizeof(api_config_msg));
-        if (msg_config->access == TRUE)
-        {
-            free(msg);
-            msg = NULL;
-            return OldRegDeleteValue(hKey, lpValueName);
-        }
-        else
-        {
-            free(msg);
-            msg = NULL;
-            //这里的返回值后期可以宏定义一下错误内容，目前暂时用ERROR代替；
-            return ERROR;
-        }
-
+    if (allow)
+    {
+        return OldRegDeleteValue(hKey, lpValueName);
     }
+    else
+    {
+        // 假装成功
+        return ERROR_SUCCESS;
+    }
+}
 
+
+int (WSAAPI* Oldsend)(
+    SOCKET     s,
+    const char* buf,
+    int        len,
+    int        flags
+    ) = send;
+
+DLL_EXPORT int WSAAPI Newsend(
+    SOCKET     s,
+    const char* buf,
+    int        len,
+    int        flags
+) {
+    API_HOOK_BEGIN_MACRO(API_send);
+        msg->arg_num = 3;
+    API_HOOK_END_MACRO(API_send);
+
+    if (allow)
+    {
+        return Oldsend(s, buf, len, flags);
+    }
+    else
+    {
+        return SOCKET_ERROR;
+    }
+}
+
+int (WSAAPI* Oldrecv)(
+    SOCKET s,
+    char* buf,
+    int    len,
+    int    flags
+    ) = recv;
+
+DLL_EXPORT int WSAAPI Newrecv(
+    SOCKET s,
+    char* buf,
+    int    len,
+    int    flags
+) {
+    API_HOOK_BEGIN_MACRO(API_recv);
+        msg->arg_num = 3;
+    API_HOOK_END_MACRO(API_recv);
+
+    if (allow)
+    {
+        return Oldrecv(s, buf, len, flags);
+    }
+    else
+    {
+        return SOCKET_ERROR;
+    }
+}
+
+int (WSAAPI* Oldsendto)(
+    SOCKET         s,
+    const char* buf,
+    int            len,
+    int            flags,
+    const sockaddr* to,
+    int            tolen
+    ) = sendto;
+
+DLL_EXPORT int WSAAPI Newsendto(
+    SOCKET         s,
+    const char* buf,
+    int            len,
+    int            flags,
+    const sockaddr* to,
+    int            tolen
+) {
+    API_HOOK_BEGIN_MACRO(API_sendto);
+        msg->arg_num = 3;
+    API_HOOK_END_MACRO(API_sendto);
+
+    if (allow)
+    {
+        return Oldsendto(s, buf, len, flags, to, tolen);
+    }
+    else
+    {
+        return SOCKET_ERROR;
+    }
+}
+
+int (WSAAPI* Oldrecvfrom)(
+    SOCKET   s,
+    char* buf,
+    int      len,
+    int      flags,
+    sockaddr* from,
+    int* fromlen
+    ) = recvfrom;
+
+DLL_EXPORT int WSAAPI Newrecvfrom(
+    SOCKET   s,
+    char* buf,
+    int      len,
+    int      flags,
+    sockaddr* from,
+    int* fromlen
+) {
+    API_HOOK_BEGIN_MACRO(API_recvfrom);
+        msg->arg_num = 3;
+    API_HOOK_END_MACRO(API_recvfrom);
+
+    if (allow)
+    {
+        return Oldrecvfrom(s, buf, len, flags, from, fromlen);
+    }
+    else
+    {
+        return SOCKET_ERROR;
+    }
+}
+
+int (WSAAPI* Oldconnect)(
+    SOCKET         s,
+    const sockaddr* name,
+    int            namelen
+    ) = connect;
+
+DLL_EXPORT int WSAAPI Newconnect(
+    SOCKET         s,
+    const sockaddr* name,
+    int            namelen
+) {
+    API_HOOK_BEGIN_MACRO(API_connect);
+        msg->arg_num = 3;
+    API_HOOK_END_MACRO(API_connect);
+
+    if (allow)
+    {
+        return Oldconnect(s, name, namelen);
+    }
+    else
+    {
+        return SOCKET_ERROR;
+    }
 }

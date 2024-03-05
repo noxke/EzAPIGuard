@@ -23,8 +23,8 @@
 #include <stdlib.h>
 
 
-uint64_t LoadLibraryArva86 = 0;
-uint64_t LoadLibraryArva64 = 0;
+uint64_t LoadLibraryArva86 = 1234;
+uint64_t LoadLibraryArva64 = 5678;
 
 DLL_EXPORT BOOL InjectByPID(uint32_t dwPID, const char* dllPath)
 {
@@ -35,7 +35,6 @@ DLL_EXPORT BOOL InjectByPID(uint32_t dwPID, const char* dllPath)
     LPVOID pRemoteBuf = NULL;
     DWORD dwBufSize = strlen(dllPath) + 1;
     uint64_t pThreadProc;
-
 
     // 获取进程句柄
     if (!(hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPID)))
@@ -282,5 +281,5 @@ DLL_EXPORT uint32_t RunInject(const char* exePath, char* cmdLine, const char* dl
     // 关闭进程和线程句柄
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
-    return success;
+    return success ? dwPID : 0;
 }

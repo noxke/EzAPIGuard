@@ -14,12 +14,16 @@ all:
     venv\Scripts\activate.bat && python -m PyQt6.uic.pyuic uics/ProcessView.ui -o Scripts/ui/__ProcessView.py
     venv\Scripts\activate.bat && python -m PyQt6.uic.pyuic uics/APIRequestDialog.ui -o Scripts/ui/__APIRequestDialog.py
     venv\Scripts\activate.bat && python -m PyQt6.uic.pyuic uics/AboutDialog.ui -o Scripts/ui/__AboutDialog.py
-    venv\Scripts\activate.bat && pyinstaller -n EzAPIGuard -y --noconsole main.py
+    venv\Scripts\activate.bat && pyinstaller -n EzAPIGuard -y --paths Scripts main.py
     @if not exist "$(ROOT)\output" mkdir $(ROOT)\output
-    move /y $(MAKEDIR)\dist\EzAPIGuard $(ROOT)\output
-    @cd "$(ROOT)\output"
-    @cmd -c "del *.exp *.lib *.pdb"
+    @if not exist "$(ROOT)\output\EzAPIGuard" mkdir $(ROOT)\output\EzAPIGuard
+    @cd "$(ROOT)\output\EzAPIGuard"
+    @if exist "_internal" cmd /c "rmdir /S /Q _internal"
+    @if exist "EzAPIGuard.exe" cmd /c "del EzAPIGuard.exe"
+    @cmd /c "del *.exp *.lib *.pdb"
     @cd "$(MAKEDIR)"
+    move /Y $(MAKEDIR)\dist\EzAPIGuard\EzAPIGuard.exe $(ROOT)\output\EzAPIGuard
+    move /Y $(MAKEDIR)\dist\EzAPIGuard\_internal $(ROOT)\output\EzAPIGuard
 
 
 

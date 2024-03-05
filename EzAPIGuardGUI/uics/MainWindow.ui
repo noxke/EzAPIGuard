@@ -114,17 +114,6 @@
             <string>Status</string>
            </property>
           </column>
-          <item>
-           <property name="text">
-            <string>test.exe</string>
-           </property>
-           <property name="text">
-            <string>114514</string>
-           </property>
-           <property name="text">
-            <string>Enable</string>
-           </property>
-          </item>
          </widget>
         </item>
        </layout>
@@ -218,33 +207,6 @@
             <string>Status</string>
            </property>
           </column>
-          <item>
-           <property name="text">
-            <string>MessageBoxA</string>
-           </property>
-           <property name="text">
-            <string>11:45:14</string>
-           </property>
-           <property name="text">
-            <string>Allow</string>
-           </property>
-           <item>
-            <property name="text">
-             <string>lpText</string>
-            </property>
-            <property name="text">
-             <string>114514</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>lpCaption</string>
-            </property>
-            <property name="text">
-             <string>114514</string>
-            </property>
-           </item>
-          </item>
          </widget>
         </item>
         <item>
@@ -359,7 +321,7 @@
              <enum>QFrame::Sunken</enum>
             </property>
             <property name="text">
-             <string notr="true">test.exe</string>
+             <string notr="true"/>
             </property>
            </widget>
           </item>
@@ -452,6 +414,11 @@
               <string>Request</string>
              </property>
             </item>
+            <item>
+             <property name="text">
+              <string>UnHook</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item row="7" column="1">
@@ -469,6 +436,11 @@
             <item>
              <property name="text">
               <string>Request</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>UnHook</string>
              </property>
             </item>
            </widget>
@@ -490,6 +462,11 @@
               <string>Request</string>
              </property>
             </item>
+            <item>
+             <property name="text">
+              <string>UnHook</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item row="8" column="1">
@@ -509,6 +486,11 @@
               <string>Request</string>
              </property>
             </item>
+            <item>
+             <property name="text">
+              <string>UnHook</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item row="5" column="1">
@@ -526,6 +508,11 @@
             <item>
              <property name="text">
               <string>Request</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>UnHook</string>
              </property>
             </item>
            </widget>
@@ -559,6 +546,11 @@
               <string>Request</string>
              </property>
             </item>
+            <item>
+             <property name="text">
+              <string>UnHook</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item row="0" column="2">
@@ -583,6 +575,11 @@
             <item>
              <property name="text">
               <string>Request</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>UnHook</string>
              </property>
             </item>
            </widget>
@@ -813,7 +810,7 @@
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'SimSun'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;test.exe pid:114 MessageBoxA hooked 114514 114514&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -977,8 +974,8 @@ p, li { white-space: pre-wrap; }
    <slot>hook_enable()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1062</x>
-     <y>455</y>
+     <x>1066</x>
+     <y>429</y>
     </hint>
     <hint type="destinationlabel">
      <x>946</x>
@@ -994,7 +991,7 @@ p, li { white-space: pre-wrap; }
    <hints>
     <hint type="sourcelabel">
      <x>1066</x>
-     <y>490</y>
+     <y>464</y>
     </hint>
     <hint type="destinationlabel">
      <x>947</x>
@@ -1010,7 +1007,7 @@ p, li { white-space: pre-wrap; }
    <hints>
     <hint type="sourcelabel">
      <x>1166</x>
-     <y>455</y>
+     <y>429</y>
     </hint>
     <hint type="destinationlabel">
      <x>946</x>
@@ -1057,8 +1054,8 @@ p, li { white-space: pre-wrap; }
    <slot>rules_config()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1126</x>
-     <y>204</y>
+     <x>1218</x>
+     <y>214</y>
     </hint>
     <hint type="destinationlabel">
      <x>948</x>
@@ -1073,8 +1070,8 @@ p, li { white-space: pre-wrap; }
    <slot>rules_config()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1130</x>
-     <y>236</y>
+     <x>1218</x>
+     <y>242</y>
     </hint>
     <hint type="destinationlabel">
      <x>947</x>
@@ -1121,8 +1118,8 @@ p, li { white-space: pre-wrap; }
    <slot>rules_config()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1123</x>
-     <y>311</y>
+     <x>1218</x>
+     <y>326</y>
     </hint>
     <hint type="destinationlabel">
      <x>949</x>
@@ -1137,8 +1134,8 @@ p, li { white-space: pre-wrap; }
    <slot>rules_config()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1116</x>
-     <y>344</y>
+     <x>1218</x>
+     <y>354</y>
     </hint>
     <hint type="destinationlabel">
      <x>950</x>
@@ -1153,8 +1150,8 @@ p, li { white-space: pre-wrap; }
    <slot>rules_config()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1115</x>
-     <y>374</y>
+     <x>1218</x>
+     <y>382</y>
     </hint>
     <hint type="destinationlabel">
      <x>949</x>
@@ -1169,8 +1166,8 @@ p, li { white-space: pre-wrap; }
    <slot>kill_process()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1106</x>
-     <y>476</y>
+     <x>1166</x>
+     <y>464</y>
     </hint>
     <hint type="destinationlabel">
      <x>957</x>

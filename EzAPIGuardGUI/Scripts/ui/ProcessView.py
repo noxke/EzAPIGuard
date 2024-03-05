@@ -22,6 +22,7 @@ class Ui_Dialog(QDialog, __ProcessView.Ui_Dialog):
         self.processTreeWidget.setColumnWidth(0, 300)
         self.processTreeWidget.setColumnWidth(1, 150)
         self.process_filter = ""
+        self.searchLineEdit.clear()
         header = self.processTreeWidget.header()
         header.setSortIndicator(0, Qt.SortOrder.AscendingOrder)
 

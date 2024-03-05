@@ -3,12 +3,13 @@
 
 extern HMODULE handleModule;
 extern DWORD dwPid;
+extern HANDLE hProcess;
+
 
 void HookAttach();
 
 void HookDetach();
 
-void HookDetachAll();
 
 // 从进程中卸载注入的dll
 void UnloadInjectedDll();

@@ -203,15 +203,22 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
 
     def process_attach(self):
         """附加进程"""
-        self.process_dialog.view_reset()
-        self.process_dialog.get_process_list()
-        self.process_dialog.set_process_list()
         self.process_dialog.exec()
         pid = self.process_dialog.result()
         if (pid != 0):
-            # 将进程添加到进程列表
             ps = psutil.Process(pid)
-            proc = self.Proc(ps.name(), pid)
+            proc = None
+            # 检查进程在不在列表里面
+            for p in self.__proc_list:
+                if (p.pid == pid and p.name == ps.name()):
+                    proc = p
+                    break
+            if (proc == None):
+                # 进程已经在列表中 再注入一次 如果注入不会重复注入
+                self.injector.inject_pid(pid)
+                return
+            self.Proc(ps.name(), pid)
+            # 将进程添加到进程列表
             if (not self.injector.inject_pid(pid)):
                 print(f"{ps.name()} PID: {pid} Inject failed!")
                 return
@@ -232,17 +239,20 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         file_dialog.setNameFilter("Executable Files (*.exe)")
         if file_dialog.exec() == QFileDialog.DialogCode.Accepted:
             selected_file = file_dialog.selectedFiles()[0]
+            # 启动前先将进程添加到进程列表中 使能先接收到进程的数据包
+            proc = self.Proc(os.path.basename(selected_file), -1)
+            proc.status = STATUS_DISCONNECT
+            self.__proc_list.append(proc)
             pid = self.injector.run_exe(selected_file)
             if (pid == 0):
                 print(f"{selected_file} Run and Inject failed!")
+                self.__proc_list.remove(proc)
                 return
             ps = psutil.Process(pid)
-            proc = self.Proc(ps.name(), pid)
-            proc.status = STATUS_DISCONNECT
+            proc.pid = ps.pid
+            proc.ps = ps
             proc.list_item = QTreeWidgetItem(
                 None, [proc.name, str(proc.pid), proc.status])
-            proc.ps = ps
-            self.__proc_list.append(proc)
             self.processListTreeWidget.addTopLevelItem(proc.list_item)
             self.processListTreeWidget.setCurrentItem(proc.list_item)
             self.flash_thread_func(ones=True)
@@ -307,6 +317,8 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         while (self.__keep_flash):
             cur_time = time.time()
             for proc in self.__proc_list:
+                if (proc.pid == -1):
+                    continue
                 if (proc.status == STATUS_EXIT):
                     continue
                 # 检查连接是否正常
@@ -317,6 +329,8 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                     proc.status = STATUS_DISCONNECT
                 # 检测进程是否存在
                 ps: psutil.Process = proc.ps
+                if (ps == None):
+                    continue
                 if (ps.is_running() == False):
                     proc.status = STATUS_EXIT
                 # 刷新status
@@ -443,6 +457,12 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             )
         self.server.send_to(proc.addr, udp_msg)
 
+    def __new_record(self, proc:Proc, api_msg_data):
+        """新的api hook记录"""
+        api_msg = struct.unpack(APIHook.api_hooked_msg_struct, api_msg_data[:20])
+        api_id = api_msg[4]
+        print(f"{proc.name} API {api_id} hooked!")
+
     def udp_handler(self, request, client_address, server):
         """udp消息处理器"""
         data, socket = request
@@ -456,9 +476,10 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             return
         msg_pid = udp_msg[2]
         msg_time = udp_msg[3]
+        msg_proc_name = psutil.Process(msg_pid).name()
         proc = None
         for p in self.__proc_list:
-            if (p.pid == msg_pid):
+            if ((p.name == msg_proc_name) and ((p.pid == msg_pid) or (p.pid == -1))):
                 proc = p
                 break
         if (proc == None):
@@ -468,11 +489,13 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             proc.addr = client_address
         match msg_type:
             case APIHook.MSG_HELLO:
-                print(f"hello from {client_address}")
+                print(f"hello from {msg_proc_name}")
                 proc.status = STATUS_HOOKED
                 self.__send_ack(proc)
             case APIHook.MSG_ACK:
-                print(f"ack from {client_address}")
+                print(f"ack from {msg_proc_name}")
+                if (proc.status == STATUS_DISCONNECT):
+                    proc.status = STATUS_HOOKED
                 pass
             case APIHook.MSG_CONFIG:
                 pass
@@ -483,9 +506,8 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             case APIHook.MSG_UNLOAD:
                 proc.status = STATUS_DISCONNECT
             case APIHook.MSG_HOOKED:
+                self.__new_record(proc, data)
                 api_msg = struct.unpack(APIHook.api_hooked_msg_struct, data[:20])
                 api_id = api_msg[4]
-                api_arg_num = api_msg[5]
-                print(f"API {api_id} hooked!")
             case _:
                 pass

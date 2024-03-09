@@ -4,9 +4,6 @@
 #include "pch.h"
 #include <Windows.h>
 
-#ifndef _LOCAL_API_H
-#include "LocalAPI.h"
-#endif
 
 #ifndef _DETOURS_HOOK_H
 #include "DetoursHook.h"

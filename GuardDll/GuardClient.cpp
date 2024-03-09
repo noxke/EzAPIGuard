@@ -9,10 +9,6 @@
 #include "GuardClient.h"
 #endif
 
-#ifndef _LOCAL_API_H
-#include "LocalAPI.h"
-#endif
-
 #ifndef _MESSAGE_DEFINE_H
 #include"MessageDefine.h"
 #endif
@@ -21,20 +17,24 @@
 #include "DetoursHook.h"
 #endif
 
+#ifndef _API_HOOK_H
+#include "APIHook.h"
+#endif
+
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-#include <time.h>
 #include <stdlib.h>
+#include <time.h>
 
 #pragma comment(lib, "Ws2_32.lib")
 
-
 struct sockaddr_in serverAddr;
 
-uint16_t serverPort = 0;    // 注入前patch为真实端口
+uint16_t serverPort = 1145;    // 注入前patch为真实端口
 char udpBuffer[UDP_BUFFER_SIZE];
 
 // Socket通信线程，接收server数据
@@ -42,8 +42,8 @@ void ClientSocketThread()
 {
     int retryTimes = 0;
     SOCKET sock = INVALID_SOCKET;
+    struct udp_msg* msg = (struct udp_msg*)udpBuffer;
 
-    srand((uint32_t)time(0));
     // 设置服务器地址和端口
     memset(&serverAddr, 0, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
@@ -65,21 +65,19 @@ void ClientSocketThread()
     }
 
     // 向服务端发送hello 报告端口信息
-    struct hello_msg* helloMsg = (struct hello_msg*)udpBuffer;
-    helloMsg->msg_type = MSG_HELLO;
-    helloMsg->data_length = sizeof(struct hello_msg);
-    helloMsg->process_pid = dwPid;
-
     retryTimes = 0;
     while (retryTimes++ < RETRY_TIMES)
     {
-        UdpSocketSend(&sock, (const char*)helloMsg, (size_t)helloMsg->data_length);
+        msg->msg_type = MSG_HELLO;
+        msg->data_length = sizeof(struct empty_msg);
+        msg->process_pid = dwPid;
+        msg->time = time(0);
+        UdpSocketSend(&sock, (const char*)msg, (size_t)msg->data_length);
         memset(udpBuffer, 0, UDP_BUFFER_SIZE);
-        int recvBytes = recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
-        if (recvBytes != SOCKET_ERROR)
+        if (UdpSocketRecv(&sock, udpBuffer, UDP_BUFFER_SIZE) == 0)
         {
-            // 接收到服务端hello
-            if (helloMsg->msg_type == MSG_HELLO && helloMsg->data_length == sizeof(struct hello_msg))
+            // 接收到服务端ack
+            if (msg->msg_type == MSG_ACK && msg->data_length == sizeof(struct empty_msg))
             {
                 retryTimes = 0;
                 break;
@@ -88,48 +86,75 @@ void ClientSocketThread()
     }
     if (retryTimes != 0)
     {
-        // 未接收到服务端hello
+        // 未接收到服务端ack
         // 关闭socket
-        // 关闭所有Hook
         // 卸载DLL
         CloseUdpSocket(&sock);
-        HookDetachAll();
         UnloadInjectedDll();
     }
 
-    // 设置hook(临时代码)
+    // 设置hook
     HookAttach();
 
     while (1)
     {
-        int recvBytes = recvfrom(sock, udpBuffer, UDP_BUFFER_SIZE, 0, NULL, NULL);
-        if (recvBytes == SOCKET_ERROR)
+        memset(udpBuffer, 0, UDP_BUFFER_SIZE);
+        if (UdpSocketRecv(&sock, udpBuffer, UDP_BUFFER_SIZE) != 0)
         {
             continue;
         }
-        struct udp_msg* msg = (struct udp_msg*)udpBuffer;
         switch (msg->msg_type)
         {
         case MSG_HELLO:
-            break;
-        case MSG_ATTACH:
-            break;
-        case MSG_DETACH:
+            // 收到hello后回复 确认存活
+            msg->msg_type = MSG_ACK;
+            msg->data_length = sizeof(struct empty_msg);
+            msg->process_pid = dwPid;
+            msg->time = time(0);
+            UdpSocketSend(&sock, (const char*)msg, msg->data_length);
             break;
         case MSG_CONFIG:
+            msg->msg_type = MSG_CONFIG;
+            msg->data_length = sizeof(struct empty_msg);
+            msg->process_pid = dwPid;
+            msg->time = time(0);
+            UdpSocketSend(&sock, (const char*)msg, msg->data_length);
             break;
         case MSG_ENABLE:
+            HookAttach();
+            msg->msg_type = MSG_ENABLE;
+            msg->data_length = sizeof(struct empty_msg);
+            msg->process_pid = dwPid;
+            msg->time = time(0);
+            UdpSocketSend(&sock, (const char*)msg, msg->data_length);
+            break;
+        case MSG_DISABLE:
+            HookDetach();
+            msg->msg_type = MSG_DISABLE;
+            msg->data_length = sizeof(struct empty_msg);
+            msg->process_pid = dwPid;
+            msg->time = time(0);
+            UdpSocketSend(&sock, (const char*)msg, msg->data_length);
             break;
         case MSG_UNLOAD:
             // 卸载dll
-            HookDetachAll();
+            HookDetach();
+            msg->msg_type = MSG_UNLOAD;
+            msg->data_length = sizeof(struct empty_msg);
+            msg->process_pid = dwPid;
+            msg->time = time(0);
+            UdpSocketSend(&sock, (const char*)msg, msg->data_length);
             UnloadInjectedDll();
             break;
         case MSG_KILL:
             // 结束进程
+            HookDetach();
+            msg->msg_type = MSG_KILL;
+            msg->data_length = sizeof(struct empty_msg);
+            msg->process_pid = dwPid;
+            msg->time = time(0);
+            UdpSocketSend(&sock, (const char*)msg, msg->data_length);
             CloseUdpSocket(&sock);
-            HookDetachAll();
-            HANDLE hProcess = GetCurrentProcess();
             TerminateProcess(hProcess, 0);
             break;
         default:
@@ -153,7 +178,7 @@ int InitUdpSocket(SOCKET* sock, uint16_t port)
     }
 
     // 创建UDP套接字
-    *sock = socket(AF_INET, SOCK_DGRAM, 0);
+    *sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     if (*sock == INVALID_SOCKET) {
         return -1;
@@ -170,7 +195,6 @@ int InitUdpSocket(SOCKET* sock, uint16_t port)
     memset(&clientAddr, 0, sizeof(clientAddr));
     clientAddr.sin_family = AF_INET;
     clientAddr.sin_addr.s_addr = INADDR_ANY; // 接收来自任何地址的数据
-
     clientAddr.sin_port = htons(port); // 设置端口号
 
     iResult = bind(*sock, (struct sockaddr*)&clientAddr, sizeof(clientAddr));
@@ -192,7 +216,7 @@ int UdpSocketSend(SOCKET* sock, const char * data, int dataLen)
     int retryTimes = 0;
     while (retryTimes++ < RETRY_TIMES)
     {
-        if (sendto(*sock, data, dataLen, 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) != SOCKET_ERROR)
+        if (Oldsendto(*sock, data, dataLen, 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) != SOCKET_ERROR)
         {
             return 0;
         }
@@ -203,11 +227,11 @@ int UdpSocketSend(SOCKET* sock, const char * data, int dataLen)
 int UdpSocketRecv(SOCKET* sock, char* data, int dataLen)
 {
     int retryTimes = 0;
-    struct sockaddr from;
-    int fromLen;
+    struct sockaddr_in from;
+    int fromLen = sizeof(from);
     while (retryTimes++ < RETRY_TIMES)
     {
-        if (recvfrom(*sock, data, dataLen, 0, &from, &fromLen) != SOCKET_ERROR)
+        if (Oldrecvfrom(*sock, data, dataLen, 0, (sockaddr *) & from, &fromLen) != SOCKET_ERROR)
         {
             return 0;
         }
@@ -216,7 +240,7 @@ int UdpSocketRecv(SOCKET* sock, char* data, int dataLen)
 }
 
 // 用于发送并接收一次
-int UdpSendRecv(const char* sendBuffer, char* recvBuffer)
+int UdpSendRecv(char* buffer, int bufferLen, bool recv)
 {
     int retryTimes = 0;
     SOCKET sock = INVALID_SOCKET;
@@ -227,13 +251,13 @@ int UdpSendRecv(const char* sendBuffer, char* recvBuffer)
         {
             continue;
         }
-        if (UdpSocketSend(&sock, sendBuffer, UDP_BUFFER_SIZE) != 0)
+        if (UdpSocketSend(&sock, buffer, bufferLen) != 0)
         {
             continue;
         }
-        if (recvBuffer != NULL)
+        if (recv == TRUE)
         {
-            if (UdpSocketRecv(&sock, recvBuffer, UDP_BUFFER_SIZE) != 0)
+            if (UdpSocketRecv(&sock, buffer, bufferLen) != 0)
             {
                 continue;
             }

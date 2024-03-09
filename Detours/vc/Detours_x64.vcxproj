@@ -36,7 +36,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{37489709-8054-4903-9C49-A79846049FC9}</ProjectGuid>
+    <ProjectGuid>{4F987EFC-F9A0-4FDE-8AE9-1DD71DDBE6F7}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Detours</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>

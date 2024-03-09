@@ -23,8 +23,8 @@
 #include <stdlib.h>
 
 
-uint64_t LoadLibraryArva86 = 0;
-uint64_t LoadLibraryArva64 = 0;
+uint64_t LoadLibraryArva86 = 0x1234;
+uint64_t LoadLibraryArva64 = 0x5678;
 
 DLL_EXPORT BOOL InjectByPID(uint32_t dwPID, const char* dllPath)
 {
@@ -35,7 +35,6 @@ DLL_EXPORT BOOL InjectByPID(uint32_t dwPID, const char* dllPath)
     LPVOID pRemoteBuf = NULL;
     DWORD dwBufSize = strlen(dllPath) + 1;
     uint64_t pThreadProc;
-
 
     // 获取进程句柄
     if (!(hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPID)))
@@ -112,7 +111,6 @@ DLL_EXPORT BOOL InjectByPID(uint32_t dwPID, const char* dllPath)
         CloseHandle(hProcess);
         return FALSE;
     }
-
     // 创建远程线程执行LoadLibraryA
     hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)pThreadProc, pRemoteBuf, 0, NULL);
     if (hThread == INVALID_HANDLE_VALUE)
@@ -276,11 +274,16 @@ DLL_EXPORT uint32_t RunInject(const char* exePath, char* cmdLine, const char* dl
         // 继续处理下一个调试事件
         ContinueDebugEvent(debugEvent.dwProcessId, debugEvent.dwThreadId, DBG_CONTINUE);
     }
+    // 将主线程休眠 回复运行使注入远程线程先运行
+    SuspendThread(pi.hThread);
     ContinueDebugEvent(debugEvent.dwProcessId, debugEvent.dwThreadId, DBG_CONTINUE);
     // 分离目标进程
     DebugActiveProcessStop(pi.dwProcessId);
+    // 延迟启动启动 确保hook成功后再运行程序
+    Sleep(1000);
+    ResumeThread(pi.hThread);
     // 关闭进程和线程句柄
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
-    return success;
+    return success ? dwPID : 0;
 }

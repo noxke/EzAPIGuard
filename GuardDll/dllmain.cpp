@@ -1,6 +1,7 @@
 ﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
 #include "pch.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <Windows.h>
 
 #ifndef _DETOURS_HOOK_H
@@ -11,6 +12,11 @@
 #include "GuardClient.h"
 #endif
 
+#ifndef _API_HOOK_H
+#include "APIHook.h"
+#endif
+
+HANDLE hProcess;
 HMODULE handleModule;
 DWORD dwPid;
 
@@ -24,6 +30,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     case DLL_PROCESS_ATTACH:
         handleModule = hModule;
         dwPid = GetCurrentProcessId();
+        hProcess = GetCurrentProcess();
         // 开启Client线程连接server
         CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ClientSocketThread, NULL, 0, NULL);
         break;

@@ -13,15 +13,22 @@ class Ui_Dialog(QDialog, __ProcessView.Ui_Dialog):
         super().__init__(parent)
         self.setupUi(self)
 
-        self.process_list = []
-        self.process_filter = ""
+        self.__process_list = []
+        self.__process_filter = ""
 
-    def view_reset(self):
+    def exec(self):
+        self.__view_reset()
+        self.__get_process_list()
+        self.__set_process_list()
+        super().exec()
+
+    def __view_reset(self):
         """重置窗口"""
         self.resize(480, 680)
         self.processTreeWidget.setColumnWidth(0, 300)
         self.processTreeWidget.setColumnWidth(1, 150)
         self.process_filter = ""
+        self.searchLineEdit.clear()
         header = self.processTreeWidget.header()
         header.setSortIndicator(0, Qt.SortOrder.AscendingOrder)
 
@@ -37,19 +44,23 @@ class Ui_Dialog(QDialog, __ProcessView.Ui_Dialog):
     def search_filter(self):
         """根据搜索框内容过滤"""
         self.process_filter = self.searchLineEdit.text()
-        self.set_process_list()
+        self.__set_process_list()
 
-    def get_process_list(self):
+    def __get_process_list(self):
         """获取进程列表"""
-        self.process_list.clear()
+        self.__process_list.clear()
+        self.processTreeWidget.clear()
         proc_list = psutil.process_iter()
         for proc in proc_list:
-            self.process_list.append((proc.name(), str(proc.pid)))
+            item = QTreeWidgetItem(None, [proc.name(), str(proc.pid)])
+            item.setHidden(False)
+            self.processTreeWidget.addTopLevelItem(item)
+            self.__process_list.append((proc.name(), str(proc.pid), item))
 
-    def set_process_list(self):
+    def __set_process_list(self):
         """设置进程列表"""
-        self.processTreeWidget.clear()
-        for proc in self.process_list:
+        for proc in self.__process_list:
             if ((self.process_filter in proc[0]) or (self.process_filter in proc[1])):
-                item = QTreeWidgetItem(None, [proc[0], proc[1]])
-                self.processTreeWidget.addTopLevelItem(item)
+                proc[2].setHidden(False)
+            else:
+                proc[2].setHidden(True)

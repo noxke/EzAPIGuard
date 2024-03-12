@@ -43,6 +43,7 @@ void ClientSocketThread()
     int retryTimes = 0;
     SOCKET sock = INVALID_SOCKET;
     struct udp_msg* msg = (struct udp_msg*)udpBuffer;
+    struct api_config_msg* config_msg = NULL;
 
     // 设置服务器地址和端口
     memset(&serverAddr, 0, sizeof(serverAddr));
@@ -114,10 +115,15 @@ void ClientSocketThread()
             UdpSocketSend(&sock, (const char*)msg, msg->data_length);
             break;
         case MSG_CONFIG:
+            config_msg = (struct api_config_msg*)msg;
             msg->msg_type = MSG_CONFIG;
-            msg->data_length = sizeof(struct empty_msg);
+            msg->data_length = sizeof(struct api_config_msg);
             msg->process_pid = dwPid;
             msg->time = time(0);
+            for (int i = 0; i < HOOK_API_NUM; i++)
+            {
+                api_config[i] = config_msg->config[i];
+            }
             UdpSocketSend(&sock, (const char*)msg, msg->data_length);
             break;
         case MSG_ENABLE:

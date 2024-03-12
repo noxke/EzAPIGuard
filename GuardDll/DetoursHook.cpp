@@ -34,6 +34,7 @@ void HookAttach()
     DetourAttach(&OldCreateFile, NewCreateFile);
     DetourAttach(&OldReadFile, NewReadFile);
     DetourAttach(&OldWriteFile, NewWriteFile);
+    DetourAttach(&OldDeleteFile, NewDeleteFile);
 
     DetourAttach(&OldHeapCreate, NewHeapCreate);
     DetourAttach(&OldHeapDestroy, NewHeapDestroy);
@@ -69,6 +70,7 @@ void HookDetach()
     DetourDetach(&OldCreateFile, NewCreateFile);
     DetourDetach(&OldReadFile, NewReadFile);
     DetourDetach(&OldWriteFile, NewWriteFile);
+    DetourDetach(&OldDeleteFile, NewDeleteFile);
 
     DetourDetach(&OldHeapCreate, NewHeapCreate);
     DetourDetach(&OldHeapDestroy, NewHeapDestroy);

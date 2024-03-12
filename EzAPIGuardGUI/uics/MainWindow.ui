@@ -336,17 +336,10 @@
         </item>
         <item>
          <layout class="QGridLayout" name="configGridLayout" columnstretch="2,0,0">
-          <item row="8" column="0">
-           <widget class="QLabel" name="networkRiskLabel">
+          <item row="6" column="0">
+           <widget class="QLabel" name="networkLabel">
             <property name="text">
-             <string>NetworkRisk</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="fileRiskLabel">
-            <property name="text">
-             <string>FileRisk</string>
+             <string>Network</string>
             </property>
            </widget>
           </item>
@@ -362,42 +355,21 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="registryLabel">
-            <property name="text">
-             <string>Registry</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
+          <item row="3" column="0">
            <widget class="QLabel" name="fileLabel">
             <property name="text">
              <string>File</string>
             </property>
            </widget>
           </item>
-          <item row="7" column="0">
-           <widget class="QLabel" name="registryRiskLabel">
+          <item row="5" column="0">
+           <widget class="QLabel" name="registryLabel">
             <property name="text">
-             <string>RegistryRisk</string>
+             <string>Registry</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="heapRiskLabel">
-            <property name="text">
-             <string>HeapRisk</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="heapLabel">
-            <property name="text">
-             <string>Heap</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1">
+          <item row="5" column="1">
            <widget class="QComboBox" name="registryRule">
             <item>
              <property name="text">
@@ -421,8 +393,8 @@
             </item>
            </widget>
           </item>
-          <item row="7" column="1">
-           <widget class="QComboBox" name="registryRiskRule">
+          <item row="6" column="1">
+           <widget class="QComboBox" name="networkRule">
             <item>
              <property name="text">
               <string>Allow</string>
@@ -445,76 +417,27 @@
             </item>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QComboBox" name="heapRule">
-            <item>
-             <property name="text">
-              <string>Allow</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Reject</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Request</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>UnHook</string>
-             </property>
-            </item>
+          <item row="3" column="2">
+           <widget class="QLabel" name="fileCnt">
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
            </widget>
           </item>
-          <item row="8" column="1">
-           <widget class="QComboBox" name="networkRiskRule">
-            <item>
-             <property name="text">
-              <string>Allow</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Reject</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Request</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>UnHook</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QComboBox" name="fileRiskRule">
-            <item>
-             <property name="text">
-              <string>Allow</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Reject</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Request</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>UnHook</string>
-             </property>
-            </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="countLabel">
+            <property name="text">
+             <string>Count</string>
+            </property>
            </widget>
           </item>
           <item row="0" column="1">
@@ -530,37 +453,6 @@
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QComboBox" name="heapRiskRule">
-            <item>
-             <property name="text">
-              <string>Allow</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Reject</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Request</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>UnHook</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QLabel" name="countLabel">
-            <property name="text">
-             <string>Count</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
            <widget class="QComboBox" name="fileRule">
             <item>
              <property name="text">
@@ -584,58 +476,7 @@
             </item>
            </widget>
           </item>
-          <item row="4" column="2">
-           <widget class="QLabel" name="fileCnt">
-            <property name="frameShape">
-             <enum>QFrame::Panel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Sunken</enum>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QLabel" name="heapRiskCnt">
-            <property name="layoutDirection">
-             <enum>Qt::LeftToRight</enum>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::Panel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Sunken</enum>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QLabel" name="heapCnt">
-            <property name="frameShape">
-             <enum>QFrame::Panel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Sunken</enum>
-            </property>
-            <property name="text">
-             <string>0</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="2">
+          <item row="5" column="2">
            <widget class="QLabel" name="registryCnt">
             <property name="frameShape">
              <enum>QFrame::Panel</enum>
@@ -651,8 +492,8 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="2">
-           <widget class="QLabel" name="fileRiskCnt">
+          <item row="6" column="2">
+           <widget class="QLabel" name="networkCnt">
             <property name="frameShape">
              <enum>QFrame::Panel</enum>
             </property>
@@ -667,24 +508,39 @@
             </property>
            </widget>
           </item>
-          <item row="8" column="2">
-           <widget class="QLabel" name="networkRiskCnt">
-            <property name="frameShape">
-             <enum>QFrame::Panel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Sunken</enum>
-            </property>
+          <item row="4" column="0">
+           <widget class="QLabel" name="heapLabel">
             <property name="text">
-             <string>0</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             <string>Heap</string>
             </property>
            </widget>
           </item>
-          <item row="7" column="2">
-           <widget class="QLabel" name="registryRiskCnt">
+          <item row="4" column="1">
+           <widget class="QComboBox" name="heapRule">
+            <item>
+             <property name="text">
+              <string>Allow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Reject</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>UnHook</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QLabel" name="heapCnt">
             <property name="frameShape">
              <enum>QFrame::Panel</enum>
             </property>
@@ -1064,22 +920,6 @@ p, li { white-space: pre-wrap; }
    </hints>
   </connection>
   <connection>
-   <sender>heapRiskRule</sender>
-   <signal>currentIndexChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>rules_config()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1218</x>
-     <y>242</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>947</x>
-     <y>232</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>fileRule</sender>
    <signal>currentIndexChanged(int)</signal>
    <receiver>MainWindow</receiver>
@@ -1092,22 +932,6 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>945</x>
      <y>262</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>fileRiskRule</sender>
-   <signal>currentIndexChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>rules_config()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1143</x>
-     <y>288</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>948</x>
-     <y>300</y>
     </hint>
    </hints>
   </connection>
@@ -1128,23 +952,7 @@ p, li { white-space: pre-wrap; }
    </hints>
   </connection>
   <connection>
-   <sender>registryRiskRule</sender>
-   <signal>currentIndexChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>rules_config()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1218</x>
-     <y>354</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>950</x>
-     <y>360</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>networkRiskRule</sender>
+   <sender>networkRule</sender>
    <signal>currentIndexChanged(int)</signal>
    <receiver>MainWindow</receiver>
    <slot>rules_config()</slot>

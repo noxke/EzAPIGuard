@@ -126,9 +126,14 @@ DLL_EXPORT uint32_t RunInject(const char* exePath, char* cmdLine, const char* dl
     DWORD dwPID = 0;
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
+    char exeDirectory[MAX_PATH];
     memset(&si, 0, sizeof(si));
     memset(&pi, 0, sizeof(pi));
     si.cb = sizeof(si);
+
+    memset(exeDirectory, 0, MAX_PATH);
+    const char* lastBackslash = strrchr(exePath, '/');
+    strncpy_s(exeDirectory, exePath, (size_t)(lastBackslash - exePath));
 
     // 启动目标进程 以调试模式启动
     BOOL success = CreateProcessA(
@@ -137,9 +142,9 @@ DLL_EXPORT uint32_t RunInject(const char* exePath, char* cmdLine, const char* dl
         NULL,               // 进程安全描述符
         NULL,               // 线程安全描述符
         FALSE,              // 是否继承句柄
-        DEBUG_ONLY_THIS_PROCESS,      // 创建调试进程的标志
+        DEBUG_ONLY_THIS_PROCESS | CREATE_NEW_CONSOLE,      // 创建调试进程的标志
         NULL,               // 环境变量
-        NULL,               // 当前目录
+        exeDirectory,       // 可执行文件所在目录
         &si,                // 启动信息
         &pi                 // 进程信息
     );

@@ -6,7 +6,7 @@ import shutil
 import ctypes
 import pefile
 import psutil
-import socketserver
+from socket import *
 from threading import Thread
 
 main_path = os.getcwd()
@@ -17,47 +17,55 @@ guard_lib = "EzGuardLib.dll"
 export_server_port = b"serverPort"
 
 RECV_TIMEOUT = 1
-RETRY_TIMES = 3
 
 class APIHook():
     """一些常量"""
-    MSG_NONE = 0  # 空数据包
-    MSG_HELLO = 1 # hello数据包 传输pid信息
-    MSG_ACK = 2   # 确认数据包
-    MSG_HOOKED = 10   # api hook数据包
-    MSG_REPLY = 11    # hooked回复包
-    MSG_ATTACH = 20   # 配置hook指定api
-    MSG_DETACH = 21   # 配置取消hook指定api
-    MSG_CONFIG = 22   # api配置包来判断是否放行或者拦截api
-    MSG_ENABLE = 250    # 启用hook
-    MSG_DISABLE = 251   # 禁用hook
-    MSG_UNLOAD = 252    # 卸载dll
-    MSG_KILL = 255      # 关闭进程
+    MSG_NONE = 0xC000  # 空数据包
+    MSG_HELLO = 0xC001 # hello数据包 传输pid信息
+    MSG_ACK = 0xC002   # 确认数据包
+    MSG_HOOKED = 0xC010   # api hook数据包
+    MSG_REPLY = 0xC011    # hooked回复包
+    MSG_ATTACH = 0xC020   # 配置hook指定api
+    MSG_DETACH = 0xC021   # 配置取消hook指定api
+    MSG_CONFIG = 0xC022   # config配置api hook行为
+    MSG_ENABLE = 0xC0F0    # 启用hook
+    MSG_DISABLE = 0xC0F1   # 禁用hook
+    MSG_UNLOAD = 0xC0F2    # 卸载dll
+    MSG_KILL = 0xC0FF      # 关闭进程
 
-    API_NONE = 0  # 空定义 不需要实现
-    API_MessageBoxA = 1
-    API_MessageBoxW = 2
-    API_CreateFile = 3
-    API_ReadFile = 4
-    API_WriteFile = 5
-    API_HeapCreate = 6
-    API_HeapDestroy = 7
-    API_HeapFree = 8
-    API_HeapAlloc = 9
-    API_RegCreateKeyEx = 10
-    API_RegSetValueEx = 11
-    API_RegCloseKey = 12
-    API_RegOpenKeyEx = 13
-    API_RegDeleteValue = 14
-    API_send = 15
-    API_recv = 16
-    API_sendto = 17
-    API_recvfrom = 18
-    API_connect = 19
+    HOOK_API_NUM = 0x50
+
+    API_NONE = 0x00  # 空定义 不需要实现
+    API_MessageBoxA = 0x01
+    API_MessageBoxW = 0x02
+    API_CreateFile = 0x10
+    API_ReadFile = 0x11
+    API_WriteFile = 0x12
+    API_DeleteFile = 0x13
+    API_HeapCreate = 0x20
+    API_HeapDestroy = 0x21
+    API_HeapFree = 0x22
+    API_HeapAlloc = 0x23
+    API_RegCreateKeyEx = 0x30
+    API_RegSetValueEx = 0x31
+    API_RegCloseKey = 0x32
+    API_RegOpenKeyEx = 0x33
+    API_RegDeleteValue = 0x34
+    API_send = 0x40
+    API_recv = 0x41
+    API_sendto = 0x42
+    API_recvfrom = 0x43
+    API_connect = 0x44
+
+    API_TYPE_NONE = 0
+    API_TYPE_FILE = 1
+    API_TYPE_HEAP = 2
+    API_TYPE_REG = 3
+    APT_TYPE_NET = 5
 
     udp_msg_struct = "H H I Q"
-    api_hooked_msg_struct = "H H I Q H H"
-    api_config_msg_struct = "H H I Q ?"
+    api_hooked_msg_struct = "H H I Q H H H H"
+    api_reply_msg_struct = "H H I Q ?"
 
 class ApiAnalyzer():
     """EzGuardLib分析器接口 每个进程对应一个分析器"""
@@ -147,6 +155,9 @@ class Injector():
             return False
         process = psutil.Process(pid)
         pe_path = process.exe()
+        if (pe_path[0] == "\\"):
+            # Windows路径就是依托史
+            pe_path = "\\" + pe_path
         pe = pefile.PE(pe_path)
         if pe.FILE_HEADER.Machine == 0x14c:
             bits = 32
@@ -192,46 +203,21 @@ class Injector():
 class UdpSocketServer():
     """socket服务端"""
 
-    def __init__(self, Address=("127.0.0.1", 0), RequestHandler=None):
-        self.server_addr = Address
-        self.req_handler = RequestHandler
-        if (RequestHandler == None):
-            self.req_handler = self.udp_handle
-        self.server = socketserver.UDPServer(self.server_addr, self.req_handler)
-        self.server_addr = self.server.server_address
-        self.server.timeout = RECV_TIMEOUT
-        self.retry_times = RETRY_TIMES
-        self.__handle_status:bool = False
-        self.handler_thread:Thread = None
+    def __init__(self, address=("127.0.0.1", 0), timeout=RECV_TIMEOUT):
+        self.server_addr = address
+        self.timeout = timeout
+        self.sock = socket(AF_INET, SOCK_DGRAM)
+        self.sock.bind(self.server_addr)
+        self.server_addr = self.sock.getsockname()
+        self.sock.settimeout(self.timeout)
 
     def send_to(self, addr, data):
         """发送udp数据包"""
-        self.server.socket.sendto(data, addr)
+        self.sock.sendto(data, addr)
 
-    def __handler_thread(self):
-        """接收线程"""
-        while (self.__handle_status == True):
-            self.server.handle_request()
-
-    def start_handler_thread(self):
-        """启动接收线程"""
-        self.stop_handler_thread()
-        self.__handle_status = True
-        self.handler_thread = Thread(target=self.__handler_thread)
-        self.handler_thread.start()
-
-
-    def stop_handler_thread(self):
-        """结束接收线程"""
-        if (self.handler_thread != None):
-            try:
-                self.__handle_status = False
-                self.handler_thread.join()
-            except:
-                pass
-
-    def udp_handle(self, request, client_address, server):
-        """udp消息处理器"""
-        data, socket = request
-        # 处理接收到的 UDP 数据
-        print("({} : {}".format(client_address, data))
+    def get_request(self):
+        """接收udp"""
+        try:
+            return self.sock.recvfrom(1024)
+        except:
+            return (None, None)

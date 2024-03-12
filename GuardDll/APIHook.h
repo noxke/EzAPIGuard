@@ -16,14 +16,14 @@
 #define HOOK_ALLOW 0
 #define HOOK_REJECT 1
 #define HOOK_REQUEST 2
-#define HOOK_DISABLE 3
+#define HOOK_UNHOOK 3
 
 // api config
-extern int api_config[HOOK_API_NUM];
+extern uint8_t api_config[HOOK_API_NUM];
 
 
 //hook的api有 MessageBoxA MessageBoxW
-// CreateFile ReadFile WriteFile
+// CreateFile ReadFile WriteFile DeleteFile
 // HeapCreate HeapDestroy HeapFree HeapAlloc
 // RegCreateKeyEx RegSetValueEx RegCloseKey RegOpenKeyEx RegDeleteValue
 // send recv sento recvfrom
@@ -93,6 +93,10 @@ DLL_EXPORT BOOL WINAPI NewWriteFile(
     LPOVERLAPPED lpOverlapped
     );
 
+extern BOOL (WINAPI *OldDeleteFile)(LPCTSTR lpFileName);
+
+
+DLL_EXPORT BOOL WINAPI NewDeleteFile(LPCTSTR lpFileName);
 
 //堆操作API的hook定义
 extern HANDLE(WINAPI* OldHeapCreate)(DWORD fIOoptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);

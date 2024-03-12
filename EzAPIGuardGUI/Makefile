@@ -20,7 +20,6 @@ all:
     @cd "$(ROOT)\output\EzAPIGuard"
     @if exist "_internal" cmd /c "rmdir /S /Q _internal"
     @if exist "EzAPIGuard.exe" cmd /c "del EzAPIGuard.exe"
-    @cmd /c "del *.exp *.lib *.pdb"
     @cd "$(MAKEDIR)"
     move /Y $(MAKEDIR)\dist\EzAPIGuard\EzAPIGuard.exe $(ROOT)\output\EzAPIGuard
     move /Y $(MAKEDIR)\dist\EzAPIGuard\_internal $(ROOT)\output\EzAPIGuard

@@ -166,6 +166,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="check.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Injector.cpp" />
     <ClCompile Include="Log.cpp" />

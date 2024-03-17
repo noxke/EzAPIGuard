@@ -351,17 +351,18 @@ DLL_EXPORT HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SIZE_T dwInitialSize, S
         API_ARG_INT_MACRO(DWORD, fIOoptions);
         API_ARG_INT_MACRO(SIZE_T, dwInitialSize);
         API_ARG_INT_MACRO(SIZE_T, dwMaximumSize);
-
-    API_HOOK_END_MACRO(API_HeapCreate);
-
+        HANDLE result;
     if (allow)
     {
-        return OldHeapCreate(fIOoptions, dwInitialSize, dwMaximumSize);
+        result = OldHeapCreate(fIOoptions, dwInitialSize, dwMaximumSize);
+        return result;
     }
     else
     {
         return NULL;
     }
+    API_ARG_INT_MACRO(HANDLE, result);
+    API_HOOK_END_MACRO(API_HeapCreate);
 }
 
 BOOL(WINAPI* OldHeapDestroy)(HANDLE heap) = HeapDestroy;
@@ -599,13 +600,17 @@ DLL_EXPORT int WSAAPI Newsend(
     int        len,
     int        flags
 ) {
-    API_HOOK_BEGIN_MACRO(API_send, 3);
+    API_HOOK_BEGIN_MACRO(API_send, 4);
 
         char hostname[NI_MAXHOST];
         char servInfo[NI_MAXSERV];
         char buffer[UDP_BUFFER_SIZE];
         // socket转换为本地的地址和端口
         sockaddr local_sockaddr;
+        int type;
+        int type_len = sizeof(type);
+        getsockopt(s, SOL_SOCKET, SO_TYPE, (char*)&type, &type_len);
+        API_ARG_INT_MACRO(int, type);
         int local_sockaddr_len = sizeof(sockaddr);
         getsockname(s, &local_sockaddr, &local_sockaddr_len);
         getnameinfo(&local_sockaddr,
@@ -614,7 +619,6 @@ DLL_EXPORT int WSAAPI Newsend(
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* local = buffer;
         API_ARG_STR_MACRO(char, local);
-
         // 发送到的数据
         API_ARG_MACRO(char, buf, buf, len);
 
@@ -655,7 +659,7 @@ DLL_EXPORT int WSAAPI Newrecv(
     int    flags
 ) {
     int ret = SOCKET_ERROR;
-    API_HOOK_BEGIN_MACRO(API_recv, 3);
+    API_HOOK_BEGIN_MACRO(API_recv, 4);
 
         // 先指向recv接收数据
         ret = recv(s, buf, len, flags);
@@ -666,6 +670,10 @@ DLL_EXPORT int WSAAPI Newrecv(
         // socket转换为本地的地址和端口
         sockaddr local_sockaddr;
         int local_sockaddr_len = sizeof(sockaddr);
+        int type;
+        int type_len = sizeof(type);
+        getsockopt(s, SOL_SOCKET, SO_TYPE, (char*)&type, &type_len);
+        API_ARG_INT_MACRO(int, type);
         getsockname(s, &local_sockaddr, &local_sockaddr_len);
         getnameinfo(&local_sockaddr,
             local_sockaddr_len, hostname,
@@ -719,13 +727,17 @@ DLL_EXPORT int WSAAPI Newsendto(
     const sockaddr* to,
     int            tolen
 ) {
-    API_HOOK_BEGIN_MACRO(API_sendto, 3);
+    API_HOOK_BEGIN_MACRO(API_sendto, 4);
 
         char hostname[NI_MAXHOST];
         char servInfo[NI_MAXSERV];
         char buffer[UDP_BUFFER_SIZE];
         // socket转换为本地的地址和端口
         sockaddr local_sockaddr;
+        int type;
+        int type_len = sizeof(type);
+        getsockopt(s, SOL_SOCKET, SO_TYPE, (char*)&type, &type_len);
+        API_ARG_INT_MACRO(int, type);
         int local_sockaddr_len = sizeof(sockaddr);
         getsockname(s, &local_sockaddr, &local_sockaddr_len);
         getnameinfo(&local_sockaddr,
@@ -776,7 +788,7 @@ DLL_EXPORT int WSAAPI Newrecvfrom(
     int* fromlen
 ) {
     int ret = SOCKET_ERROR;
-    API_HOOK_BEGIN_MACRO(API_recvfrom, 3);
+    API_HOOK_BEGIN_MACRO(API_recvfrom, 4);
 
         // 先执行原recvfrom接收数据
         ret = Oldrecvfrom(s, buf, len, flags, from, fromlen);
@@ -785,6 +797,10 @@ DLL_EXPORT int WSAAPI Newrecvfrom(
         char servInfo[NI_MAXSERV];
         char buffer[UDP_BUFFER_SIZE];
         // socket转换为本地的地址和端口
+        int type;
+        int type_len = sizeof(type);
+        getsockopt(s, SOL_SOCKET, SO_TYPE, (char*)&type, &type_len);
+        API_ARG_INT_MACRO(int, type);
         sockaddr local_sockaddr;
         int local_sockaddr_len = sizeof(sockaddr);
         getsockname(s, &local_sockaddr, &local_sockaddr_len);
@@ -832,12 +848,16 @@ DLL_EXPORT int WSAAPI Newconnect(
     const sockaddr* name,
     int            namelen
 ) {
-    API_HOOK_BEGIN_MACRO(API_connect, 2);
+    API_HOOK_BEGIN_MACRO(API_connect, 3);
 
         char hostname[NI_MAXHOST];
         char servInfo[NI_MAXSERV];
         char buffer[UDP_BUFFER_SIZE];
         // socket转换为本地的地址和端口
+        int type;
+        int type_len = sizeof(type);
+        getsockopt(s, SOL_SOCKET, SO_TYPE, (char*)&type, &type_len);
+        API_ARG_INT_MACRO(int, type);
         sockaddr local_sockaddr;
         int local_sockaddr_len = sizeof(sockaddr);
         getsockname(s, &local_sockaddr, &local_sockaddr_len);

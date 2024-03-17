@@ -1,3 +1,5 @@
+#include "pch.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,19 +11,13 @@
 #include <unordered_set> // 引入无序集合容器
 #include <set> // 引入集合容器
 #include <string> // 引入字符串处理库
+
 #ifndef _MESSAGE_DEFINE_H
 #include"MessageDefine.h"
 #endif
+
 #pragma comment(lib, "Ws2_32.lib") // 链接Winsock库，用于网络通信
 // 定义各种API操作的宏，用于简化代码中的判断逻辑
-// 定义API钩子消息结构体
-struct api_hooked_msg{
-    uint16_t msg_type; // 消息类型
-    uint16_t data_length; // 数据长度
-    uint32_t process_pid;   // 进程PID信息
-    uint16_t api_id;  // API标识符
-    uint16_t arg_num; // 参数数量
-};
 
 // 定义UDP消息结构体
 struct udp_msg_t
@@ -45,7 +41,7 @@ struct info{
     uint16_t arg_num; // 参数数量
     char arg_Value[10][100]; // 参数值，最多10个参数，每个参数最大长度为100
 };
-#define WARN_DATA_SIZE 100
+#define WARN_DATA_SIZE 0x100
 struct back_warns{
     bool is_warn;
     char warn_level_data[WARN_DATA_SIZE];
@@ -67,15 +63,17 @@ struct processState {
 };
 
 back_warns back_warn;
+
+#define DLL_EXPORT extern "C" __declspec(dllexport)
 extern "C" {
     // 声明外部C接口，以便在C++中调用C函数
     void checkAPIheap(struct info* checkAPIarg, std::unordered_set<int>* HeapSave, std::unordered_set<int>* HeapMemerySave);
     void checkAPIcreatefile(struct info* checkAPIarg, std::set<std::string>* foldernameSave, std::string* source_filepath);
     void checkAPIregistry(struct info* checkAPIarg, std::unordered_set<std::string>* registerSave);
     void checkAPInetwork(struct info* checkAPIarg, std::unordered_map<int, networkInfo>* networkConnections);
-    void checkAPI(struct info* checkAPIarg, struct udp_msg_t *msg, processState& state);
-    void checker(char *inBuffer,char *outbuffer,uint16_t inbufferlen,uint16_t outbufferlen);
+    void checkAPI(struct info* checkAPIarg, struct udp_msg_t* msg, processState& state);
 }
+DLL_EXPORT void checker(char *inBuffer,char *outbuffer,uint16_t inbufferlen,uint16_t outbufferlen);
 // 初始化info结构体，将udp_msg_t的数据转换为info结构体
 void init_changeto(struct info *checkAPIarg,udp_msg_t*msg){
     checkAPIarg->type = msg->msg_type;
@@ -115,7 +113,7 @@ void checkAPIheap(struct info* checkAPIarg, std::unordered_set<int>* HeapSave) {
                     HeapSave->erase(it); // 统一处理API_HeapDestroy和API_HeapFree
                 } else {
                     back_warn.is_warn=true;
-                    sprintf(back_warn.warn_level_data,"[High]Attempt to destroy or free invalid heap\n");
+                    sprintf_s(back_warn.warn_level_data,"[High]Attempt to destroy or free invalid heap\n");
                     //SocketAPI_send((const char*)&back_warn,(size_t)(sizeof(back_warn)));
                     //printf("Attempt to destroy or free invalid heap\n"); // 统一错误消息
                 }
@@ -138,7 +136,7 @@ void checkAPIcreatefile(struct info* checkAPIarg, std::set<std::string>* foldern
     foldernameSave->insert(foldername); // 插入文件夹名
     if (foldernameSave->size() >= 2) {
         back_warn.is_warn=false;
-        sprintf(back_warn.warn_level_data,"[Info]The program operated on multiple folders\n");
+        sprintf_s(back_warn.warn_level_data,"[Info]The program operated on multiple folders\n");
         //SocketAPI_send((const char*)&back_warn,(size_t)(sizeof(back_warn)));
         //printf("The program operated on multiple folders\n"); // 如果操作了多个文件夹，打印警告
     }
@@ -150,12 +148,12 @@ void checkAPIcreatefile(struct info* checkAPIarg, std::set<std::string>* foldern
     bool isExecutableModification = (lpfilename_lower.find(".exe") != std::string::npos || lpfilename_lower.find(".dll") != std::string::npos || lpfilename_lower.find(".ocx") != std::string::npos) && (dwDesireadAccess & GENERIC_WRITE);
     if (isSelfReplication) {
         back_warn.is_warn=true;
-        sprintf(back_warn.warn_level_data,"[High]The program has replicated itself\n");
+        sprintf_s(back_warn.warn_level_data,"[High]The program has replicated itself\n");
         //SocketAPI_send((const char*)&back_warn,(size_t)(sizeof(back_warn)));
     }
     if (isExecutableModification) {
         back_warn.is_warn=true;
-        sprintf(back_warn.warn_level_data,"[Medium]The program modified other executable code\n");
+        sprintf_s(back_warn.warn_level_data,"[Medium]The program modified other executable code\n");
         //SocketAPI_send((const char*)&back_warn,(size_t)(sizeof(back_warn)));
     }
 }
@@ -168,14 +166,14 @@ void checkAPIregistry(struct info* checkAPIarg, std::unordered_set<std::string>*
 
     if (isAutostartModification) {
         back_warn.is_warn=true;
-        sprintf(back_warn.warn_level_data,"[High]The program added or modified an autostart registry entry\n");
+        sprintf_s(back_warn.warn_level_data,"[High]The program added or modified an autostart registry entry\n");
         //SocketAPI_send((const char*)&back_warn,(size_t)(sizeof(back_warn)));
     }
     bool isRegistryModification = (checkAPIarg->type == API_RegCreateKeyEx || checkAPIarg->type == API_RegSetValueEx || checkAPIarg->type == API_RegDeleteValue) && (regPath.find("Software\\") != std::string::npos); // 检查是否修改了注册表项
 
     if (isRegistryModification) {
         back_warn.is_warn=true;
-        sprintf(back_warn.warn_level_data,"[Medium]The program modified a registry entry\n");
+        sprintf_s(back_warn.warn_level_data,"[Medium]The program modified a registry entry\n");
         //SocketAPI_send((const char*)&back_warn,(size_t)(sizeof(back_warn)));
     }
 }
@@ -216,14 +214,15 @@ void checkAPInetwork(struct info* checkAPIarg, std::unordered_map<int, networkIn
             auto remoteIPandPort = extractIPandPort(remote);
 
             // 将连接详情保存到back_warn中
-            sprintf(back_warn.warn_level_data, "连接类型: %s, 本地: %s:%d, 远程: %s:%d\n", 
+            sprintf_s(back_warn.warn_level_data, "连接类型: %s, 本地: %s:%d, 远程: %s:%d\n", 
                     typestr.c_str(), localIPandPort.first.c_str(), localIPandPort.second, 
                     remoteIPandPort.first.c_str(), remoteIPandPort.second);
 
             // 检查缓冲区是否包含明文HTTP通信
             if (!buffer.empty() && buffer.find("HTTP") != std::string::npos) {
                 // 如果检测到明文HTTP通信，追加警告消息
-                sprintf(back_warn.warn_level_data + strlen(back_warn.warn_level_data), 
+                snprintf(back_warn.warn_level_data +strlen(back_warn.warn_level_data),
+                        WARN_DATA_SIZE,
                         "[Warning] Potential plaintext HTTP communication detected.\n");
             }
             break;
@@ -263,15 +262,15 @@ void checkAPI(struct info* checkAPIarg, struct udp_msg_t *msg, processState& sta
 }
 
 
-void checker(char *inBuffer,char *outbuffer,uint16_t inbufferlen,uint16_t outbufferlen){
-    udp_msg_t udpMsgBuffer; // 修改为udpMsgBuffer，避免与类型名称冲突
+DLL_EXPORT void checker(char *inBuffer,char *outbuffer,uint16_t inbufferlen,uint16_t outbufferlen){
+    // udp_msg_t udpMsgBuffer; // 修改为udpMsgBuffer，避免与类型名称冲突
     // 假设SocketAPI_recv是一个已定义的函数，用于接收数据
     processState state; // 假设有一个state对象
     struct info checkAPIarg; // 假设有一个info对象
     checkAPI(&checkAPIarg, (udp_msg_t*)inBuffer, state); // 调用checkAPI函数处理输入缓冲区的数据
     if(back_warn.is_warn) {
-        strncpy(outbuffer, back_warn.warn_level_data, outbufferlen - 1); // 将警告信息复制到输出缓冲区
-        outbuffer[outbufferlen - 1] = '\0'; // 确保字符串结束
+        memcpy(outbuffer, back_warn.warn_level_data, strlen(back_warn.warn_level_data)); // 将警告信息复制到输出缓冲区
+        // outbuffer[outbufferlen - 1] = '\0'; // 确保字符串结束
     }
 }
 

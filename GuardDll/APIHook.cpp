@@ -134,7 +134,7 @@ int (WINAPI* OldMessageBoxA)(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt
 DLL_EXPORT int WINAPI NewMessageBoxA(_In_opt_ HWND hWnd, _In_opt_ LPCSTR lpText, _In_opt_ LPCSTR lpCaption, _In_ UINT uType)
 {
     // uType参数省略
-    API_HOOK_BEGIN_MACRO(API_MessageBoxA, 3);
+    API_HOOK_BEGIN_MACRO(API_MessageBoxA, 4);
         
         //将hWnd转换为窗口名
         char buffer[MAX_ARG_LEN];

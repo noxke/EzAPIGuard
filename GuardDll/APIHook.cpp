@@ -31,6 +31,7 @@ uint8_t api_config[HOOK_API_NUM] = { HOOK_ALLOW, };
 // 定义宏用于处理API操作
 #define API_HOOK_BEGIN_MACRO(_api_id, _arg_num)\
 struct api_hooked_msg* msg = (struct api_hooked_msg*)malloc(UDP_BUFFER_SIZE);\
+memset(msg, 0, UDP_BUFFER_SIZE);\
 BOOL allow = TRUE;\
 if (api_config[_api_id] == HOOK_UNHOOK) goto _nosend;\
 if (allow && msg != NULL)\
@@ -234,6 +235,7 @@ DLL_EXPORT BOOL WINAPI NewReadFile(
     LPOVERLAPPED lpOverlapped
 ) {
     DWORD NumberOfBytesRead = 0;
+    BOOL ret = FALSE;
     API_HOOK_BEGIN_MACRO(API_ReadFile, 3);
 
         // 获取文件名
@@ -249,20 +251,16 @@ DLL_EXPORT BOOL WINAPI NewReadFile(
         API_ARG_MACRO(HANDLE, hFile, buffer, strlen(buffer));
 
         // 提前读取内容
-        OldReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &NumberOfBytesRead, lpOverlapped);
+        ret = OldReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &NumberOfBytesRead, lpOverlapped);
         API_ARG_MACRO(LPVOID, lpBuffer, lpBuffer, nNumberOfBytesToRead);
         API_ARG_INT_MACRO(DWORD, nNumberOfBytesToRead);
 
     API_HOOK_END_MACRO(API_ReadFile);
 
-    if (api_config[API_ReadFile] == HOOK_UNHOOK)
-    {
-        return ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
-    }
     if (allow)
     {
         if (lpNumberOfBytesRead != NULL) *lpNumberOfBytesRead = NumberOfBytesRead;
-        return TRUE;
+        return ret;
     }
     else
     {
@@ -321,16 +319,16 @@ DLL_EXPORT BOOL WINAPI NewWriteFile(
 }
 
 
-BOOL(WINAPI* OldDeleteFile)(LPCTSTR lpFileName) = DeleteFile;
+BOOL(WINAPI* OldDeleteFile)(LPCWSTR lpFileName) = DeleteFileW;
 
 
-DLL_EXPORT BOOL WINAPI NewDeleteFile(LPCTSTR lpFileName)
+DLL_EXPORT BOOL WINAPI NewDeleteFile(LPCWSTR lpFileName)
 {
-    API_HOOK_BEGIN_MACRO(API_CreateFile, 1);
+    API_HOOK_BEGIN_MACRO(API_DeleteFile, 1);
 
-    API_ARG_WSTR_MACRO(LPCWSTR, lpFileName);
+        API_ARG_WSTR_MACRO(LPCWSTR, lpFileName);
 
-    API_HOOK_END_MACRO(API_CreateFile);
+    API_HOOK_END_MACRO(API_DeleteFile);
     if (allow)
     {
         return OldDeleteFile(lpFileName);
@@ -623,7 +621,7 @@ DLL_EXPORT int WSAAPI Newsend(
         getsockname(s, &local_sockaddr, &local_sockaddr_len);
         getnameinfo(&local_sockaddr,
             local_sockaddr_len, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* local = buffer;
         API_ARG_STR_MACRO(char, local);
@@ -636,7 +634,7 @@ DLL_EXPORT int WSAAPI Newsend(
         getpeername(s, &name, &namelen);
         getnameinfo(&name,
             namelen, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* remote = buffer;
         API_ARG_STR_MACRO(char, remote);
@@ -670,7 +668,7 @@ DLL_EXPORT int WSAAPI Newrecv(
     API_HOOK_BEGIN_MACRO(API_recv, 4);
 
         // 先指向recv接收数据
-        ret = recv(s, buf, len, flags);
+        ret = Oldrecv(s, buf, len, flags);
 
         int sock_type;
         int type_len = sizeof(sock_type);
@@ -686,7 +684,7 @@ DLL_EXPORT int WSAAPI Newrecv(
         getsockname(s, &local_sockaddr, &local_sockaddr_len);
         getnameinfo(&local_sockaddr,
             local_sockaddr_len, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* local = buffer;
         API_ARG_STR_MACRO(char, local);
@@ -700,7 +698,7 @@ DLL_EXPORT int WSAAPI Newrecv(
         getpeername(s, &name, &namelen);
         getnameinfo(&name,
             namelen, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* remote = buffer;
         API_ARG_STR_MACRO(char, remote);
@@ -752,7 +750,7 @@ DLL_EXPORT int WSAAPI Newsendto(
         getsockname(s, &local_sockaddr, &local_sockaddr_len);
         getnameinfo(&local_sockaddr,
             local_sockaddr_len, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* local = buffer;
         API_ARG_STR_MACRO(char, local);
@@ -763,7 +761,7 @@ DLL_EXPORT int WSAAPI Newsendto(
         // to转换为远程的地址和端口
         getnameinfo(to,
             tolen, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* remote = buffer;
         API_ARG_STR_MACRO(char, remote);
@@ -817,7 +815,7 @@ DLL_EXPORT int WSAAPI Newrecvfrom(
         getsockname(s, &local_sockaddr, &local_sockaddr_len);
         getnameinfo(&local_sockaddr,
             local_sockaddr_len, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* local = buffer;
         API_ARG_STR_MACRO(char, local);
@@ -828,7 +826,7 @@ DLL_EXPORT int WSAAPI Newrecvfrom(
         // from转换为远程的地址和端口
         getnameinfo(from,
             *fromlen, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* remote = buffer;
         API_ARG_STR_MACRO(char, remote);
@@ -872,10 +870,26 @@ DLL_EXPORT int WSAAPI Newconnect(
         // socket转换为本地的地址和端口
         sockaddr local_sockaddr;
         int local_sockaddr_len = sizeof(sockaddr);
-        getsockname(s, &local_sockaddr, &local_sockaddr_len);
-        getnameinfo(&local_sockaddr,
-            local_sockaddr_len, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+        if (getsockname(s, &local_sockaddr, &local_sockaddr_len) == 0)
+        {
+            getnameinfo(&local_sockaddr,
+                local_sockaddr_len, hostname,
+                NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+        }
+        else
+        {
+            // 由于connect前不需要显示绑定地址，因此可能无法获取到正确的地址
+            if (name->sa_family == AF_INET6)
+            {
+                snprintf(hostname, NI_MAXHOST, "0:0:0:0:0:0:0:0");
+                snprintf(servInfo, NI_MAXSERV, "0");
+            }
+            else
+            {
+                snprintf(hostname, NI_MAXHOST, "0.0.0.0");
+                snprintf(servInfo, NI_MAXSERV, "0");
+            }
+        }
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* local = buffer;
         API_ARG_STR_MACRO(char, local);
@@ -883,7 +897,7 @@ DLL_EXPORT int WSAAPI Newconnect(
         // name转换为远程的地址和端口
         getnameinfo(name,
             namelen, hostname,
-            NI_MAXHOST, NULL, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* remote = buffer;
         API_ARG_STR_MACRO(char, remote);

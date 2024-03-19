@@ -96,7 +96,7 @@ DLL_EXPORT BOOL WINAPI NewWriteFile(
 extern BOOL (WINAPI *OldDeleteFile)(LPCTSTR lpFileName);
 
 
-DLL_EXPORT BOOL WINAPI NewDeleteFile(LPCTSTR lpFileName);
+DLL_EXPORT BOOL WINAPI NewDeleteFile(LPCWSTR lpFileName);
 
 //堆操作API的hook定义
 extern HANDLE(WINAPI* OldHeapCreate)(DWORD fIOoptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize);

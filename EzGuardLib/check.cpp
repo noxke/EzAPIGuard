@@ -73,7 +73,7 @@ extern "C" {
     void checkAPInetwork(struct info* checkAPIarg, std::unordered_map<int, networkInfo>* networkConnections);
     void checkAPI(struct info* checkAPIarg, struct udp_msg_t* msg, processState& state);
 }
-DLL_EXPORT void checker(char *inBuffer,char *outbuffer,uint16_t inbufferlen,uint16_t outbufferlen);
+DLL_EXPORT void checker(char *inBuffer, uint16_t inbufferlen, char* outbuffer, uint16_t outbufferlen);
 // 初始化info结构体，将udp_msg_t的数据转换为info结构体
 void init_changeto(struct info *checkAPIarg,udp_msg_t*msg){
     checkAPIarg->type = msg->msg_type;
@@ -262,7 +262,7 @@ void checkAPI(struct info* checkAPIarg, struct udp_msg_t *msg, processState& sta
 }
 
 
-DLL_EXPORT void checker(char *inBuffer,char *outbuffer,uint16_t inbufferlen,uint16_t outbufferlen){
+DLL_EXPORT void checker(char *inBuffer, uint16_t inbufferlen, char* outbuffer, uint16_t outbufferlen){
     // udp_msg_t udpMsgBuffer; // 修改为udpMsgBuffer，避免与类型名称冲突
     // 假设SocketAPI_recv是一个已定义的函数，用于接收数据
     processState state; // 假设有一个state对象

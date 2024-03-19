@@ -237,7 +237,7 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
     def __flash_thread(self):
         """界面刷新线程 刷新进程列表中进程的存活状态"""
         while (self.__keep_running):
-            QThread.sleep(1)
+            time.sleep(0.2)
             cur_time = time.time()
             for proc in self.__proc_list:
                 if (proc.pid < 0):  # 新创建进程或导入的记录
@@ -281,7 +281,6 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                 value = self.__overview_rules[key]
                 rule_item:QComboBox = value["item"]
                 cnt_item:QLabel = value["cnt"]
-                rule_item.setCurrentIndex(value["rule"])
                 cnt_item.setText(str(cnts[key]))
             self.processNameLabel.setText(proc_name)
             self.hookedCnt.setText(str(sum(cnts))+" Hooked")
@@ -395,6 +394,7 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             QCoreApplication.translate("MainWindow", "ProcessName:"))
         selected_proc: self.Proc = self.__selected_proc
         cnts = [0, 0, 0, 0, 0]
+        rules = [RULE_ALLOW for _ in range(5)]
         warn_cnt = 0
         proc_name = ""
         if (selected_proc != None):
@@ -402,11 +402,12 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             proc_name = selected_proc.name
             for i in range(len(selected_proc.rules)):
                 cnts[i] = selected_proc.rules[i]["cnt"]
+                rules[i] = selected_proc.rules[i]["rule"]
             for key in range(1, len(self.__overview_rules)):
                 value = self.__overview_rules[key]
                 rule_item:QComboBox = value["item"]
                 cnt_item:QLabel = value["cnt"]
-                rule_item.setCurrentIndex(value["rule"])
+                rule_item.setCurrentIndex(rules[key])
                 cnt_item.setText(str(cnts[key]))
         self.processNameLabel.setText(proc_name)
         self.hookedCnt.setText(str(sum(cnts))+" Hooked")
@@ -593,7 +594,7 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         """回复api请求"""
         udp_msg = struct.pack(
             APIHook.api_reply_msg_struct,
-            APIHook.MSG_ACK,
+            APIHook.MSG_REPLY,
             struct.calcsize(APIHook.api_reply_msg_struct),
             0,
             int(time.time()),
@@ -614,7 +615,6 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                 data, client_address = self.server.get_request()
                 if (data != None and client_address != None):
                     self.signal.emit(data, client_address)
-                time.sleep(0.5)
         
         def stop(self):
             self.__keep_runing = False
@@ -674,6 +674,11 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
 
     def __api_hooked(self, proc:Proc, api_msg_data, addr):
         """api hook记录 处理api请求"""
+        check_info = self.analyzer.checker(api_msg_data)
+
+        #! temp log
+        print(check_info)
+
         api_msg = struct.unpack(APIHook.api_hooked_msg_struct, api_msg_data[:24])
         api_time = api_msg[3]
         api_id = api_msg[4]
@@ -698,10 +703,7 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         proc.rules[api_type]["cnt"] += 1
 
         match api_id:
-            case APIHook.API_MessageBoxA:
-                for key in api_args.keys():
-                    api_args[key] = api_args[key].decode(encoding="ansi")
-            case APIHook.API_MessageBoxW:
+            case APIHook.API_MessageBoxA | APIHook.API_MessageBoxW:
                 for key in api_args.keys():
                     api_args[key] = api_args[key].decode(encoding="ansi")
 
@@ -720,21 +722,12 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             case APIHook.API_DeleteFile:
                 api_args["lpFileName"] = api_args["lpFileName"].decode(encoding="ansi")
 
-            case APIHook.API_HeapCreate:
-                for key, value in api_args.items():
-                    api_args[key] = hex(int.from_bytes(value, 'little'))
-            case APIHook.API_HeapDestroy:
-                for key, value in api_args.items():
-                    api_args[key] = hex(int.from_bytes(value, 'little'))
-            case APIHook.API_HeapFree:
-                for key, value in api_args.items():
-                    api_args[key] = hex(int.from_bytes(value, 'little'))
-            case APIHook.API_API_HeapAlloc:
-                # 已取消hook HeapAlloc
+            case APIHook.API_HeapCreate | APIHook.API_HeapDestroy\
+                | APIHook.API_HeapAlloc | APIHook.API_HeapFree:
                 for key, value in api_args.items():
                     api_args[key] = hex(int.from_bytes(value, 'little'))
 
-            case APIHook.API_RegCreateKeyEx:
+            case APIHook.API_RegCreateKeyEx | APIHook.API_RegOpenKeyEx:
                 api_args["hKey"] = hex(int.from_bytes(api_args["hKey"], 'little'))
                 api_args["lpSubKey"] = api_args["lpSubKey"].decode(encoding="ansi")
             case APIHook.API_RegSetValueEx:
@@ -744,28 +737,26 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                 api_args["cbData"] = hex(int.from_bytes(api_args["cbData"], 'little'))
             case APIHook.API_RegCloseKey:
                 api_args["hKey"] = hex(int.from_bytes(api_args["hKey"], 'little'))
-            case APIHook.API_RegOpenKeyEx:
-                api_args["hKey"] = hex(int.from_bytes(api_args["hKey"], 'little'))
-                api_args["lpSubKey"] = api_args["lpSubKey"].decode(encoding="ansi")
             case APIHook.API_RegDeleteValue:
                 api_args["hKey"] = hex(int.from_bytes(api_args["hKey"], 'little'))
                 api_args["lpValueName"] = api_args["lpValueName"].decode(encoding="ansi")
 
-            case APIHook.API_send:
+            case APIHook.API_send | APIHook.API_recv | APIHook.API_sendto\
+                | APIHook.API_recvfrom | APIHook.API_connect:
                 api_args["local"] = api_args["local"].decode(encoding="ansi")
                 api_args["remote"] = api_args["remote"].decode(encoding="ansi")
-            case APIHook.API_recv:
-                api_args["local"] = api_args["local"].decode(encoding="ansi")
-                api_args["remote"] = api_args["remote"].decode(encoding="ansi")
-            case APIHook.API_sendto:
-                api_args["local"] = api_args["local"].decode(encoding="ansi")
-                api_args["remote"] = api_args["remote"].decode(encoding="ansi")
-            case APIHook.API_recvfrom:
-                api_args["local"] = api_args["local"].decode(encoding="ansi")
-                api_args["remote"] = api_args["remote"].decode(encoding="ansi")
-            case APIHook.API_connect:
-                api_args["local"] = api_args["local"].decode(encoding="ansi")
-                api_args["remote"] = api_args["remote"].decode(encoding="ansi")
+                sock_type = int.from_bytes(api_args["sock_type"], 'little')
+                match sock_type:
+                    case 1:
+                        api_args["sock_type"] = "SOCK_STREAM"
+                    case 2:
+                        api_args["sock_type"] = "SOCK_DGRAM"
+                    case 3:
+                        api_args["sock_type"] = "SOCK_RAW"
+                    case 4:
+                        api_args["sock_type"] = "SOCK_RDM"
+                    case 5:
+                        api_args["sock_type"] = "SOCK_SEQPACKET"
             case _:
                 pass
                 return
@@ -775,7 +766,9 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             case 1:
                 api_rule = "Reject"
             case 2: # Request
-                msg = f"## {api_name}\n\n{api_args}"
+                msg = f"## {api_name}\n\n"
+                for arg_name, arg_value in api_args.items():
+                    msg += f"{arg_name}: \t{arg_value}\n\n"
                 if (self.api_request(msg)):
                     api_rule = "Allow"
                     self.__api_reply(True, addr)

@@ -61,7 +61,7 @@ class APIHook():
     API_TYPE_FILE = 1
     API_TYPE_HEAP = 2
     API_TYPE_REG = 3
-    APT_TYPE_NET = 5
+    API_TYPE_NET = 4
 
     udp_msg_struct = "H H I Q"
     api_hooked_msg_struct = "H H I Q H H H H"
@@ -71,6 +71,16 @@ class ApiAnalyzer():
     """EzGuardLib分析器接口 每个进程对应一个分析器"""
     def __init__(self):
         self.dll = ctypes.CDLL(os.path.join(main_path, guard_lib))
+        self.__checker = self.dll.checker
+        self.__checker.argtypes = [ctypes.c_char_p, ctypes.c_uint16,\
+                                ctypes.c_char_p, ctypes.c_uint16]
+        self.__checker.restype = None
+    
+    def checker(self, data:bytes)->str:
+        """分析器接口"""
+        ret = ctypes.create_string_buffer(0x100)
+        self.__checker(data, len(data), ret, 0x100)
+        return bytes(ret).decode(encoding="ansi")
 
 
 class Injector():

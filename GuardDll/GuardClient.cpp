@@ -54,7 +54,7 @@ void ClientSocketThread()
     // 初始化socket 随机端口
     while (retryTimes++ < RETRY_TIMES)
     {
-        if (InitUdpSocket(&sock, 0) == 0)
+        if (InitUdpSocket(&sock, 0, RECV_TIMEOUT) == 0)
         {
             retryTimes = 0;
             break;
@@ -169,7 +169,7 @@ void ClientSocketThread()
     }
 }
 
-int InitUdpSocket(SOCKET* sock, uint16_t port)
+int InitUdpSocket(SOCKET* sock, uint16_t port, uint32_t timeout)
 {
     // 不能使用WSACleanup，在多线程环境中， WSACleanup 终止所有线程的 Windows 套接字操作。
     WSADATA wsaData;
@@ -191,8 +191,7 @@ int InitUdpSocket(SOCKET* sock, uint16_t port)
     }
 
     // 设置接收超时
-    DWORD timeoutValue = RECV_TIMEOUT;
-    if (setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeoutValue, sizeof(timeoutValue)) == SOCKET_ERROR) {
+    if (setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == SOCKET_ERROR) {
         closesocket(*sock);
         return -1;
     }
@@ -253,21 +252,24 @@ int UdpSendRecv(char* buffer, int bufferLen, bool recv)
     // 多发几次避免失败 实际上应该不可能失败
     while (retryTimes++ < RETRY_TIMES)
     {
-        if (InitUdpSocket(&sock, 0) != 0)
+        if (InitUdpSocket(&sock, 0, REQUEST_TIMEOUT) != 0)
         {
             continue;
         }
         if (UdpSocketSend(&sock, buffer, bufferLen) != 0)
         {
+            CloseUdpSocket(&sock);
             continue;
         }
         if (recv == TRUE)
         {
             if (UdpSocketRecv(&sock, buffer, bufferLen) != 0)
             {
+                CloseUdpSocket(&sock);
                 continue;
             }
         }
+        CloseUdpSocket(&sock);
         return 0;
     }
     return -1;

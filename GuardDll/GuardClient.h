@@ -12,13 +12,14 @@
 
 #define RETRY_TIMES 3
 #define RECV_TIMEOUT 3000
+#define REQUEST_TIMEOUT 60000
 
 // 导出端口，注入前将serverPort patch为真实端口
 DLL_EXPORT extern uint16_t serverPort;
 
 void ClientSocketThread();
 
-int InitUdpSocket(SOCKET *sock, uint16_t port);
+int InitUdpSocket(SOCKET *sock, uint16_t port, uint32_t timeout);
 
 void CloseUdpSocket(SOCKET* sock);
 

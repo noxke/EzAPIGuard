@@ -80,7 +80,7 @@ class ApiAnalyzer():
         """分析器接口"""
         ret = ctypes.create_string_buffer(0x100)
         self.__checker(data, len(data), ret, 0x100)
-        return bytes(ret).decode(encoding="ansi")
+        return bytes(ret).split(b'\x00')[0].decode(encoding="ansi")
 
 
 class Injector():

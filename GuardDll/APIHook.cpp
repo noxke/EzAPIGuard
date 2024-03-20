@@ -346,7 +346,7 @@ DLL_EXPORT HANDLE WINAPI NewHeapCreate(DWORD fIOoptions, SIZE_T dwInitialSize, S
 {
     HANDLE retHandle = NULL;
 
-    API_HOOK_BEGIN_MACRO(API_HeapCreate, 3);
+    API_HOOK_BEGIN_MACRO(API_HeapCreate, 4);
 
         API_ARG_INT_MACRO(DWORD, fIOoptions);
         API_ARG_INT_MACRO(SIZE_T, dwInitialSize);

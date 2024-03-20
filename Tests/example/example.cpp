@@ -59,6 +59,25 @@ int main() {
     }
 
     // 堆操作示例
+    HANDLE hHeap = HeapCreate(0, 0x100, 0x1000);
+    if (hHeap != NULL)
+    {
+        printf("Create Heap\n");
+        LPVOID p = HeapAlloc(hHeap, HEAP_ZERO_MEMORY, 0x200);
+        if (p != NULL)
+        {
+            printf("Heap Alloc\n");
+            if (HeapFree(hHeap, HEAP_NO_SERIALIZE, p))
+            {
+                printf("Heap Free\n");
+            }
+        }
+        if (HeapDestroy(hHeap))
+        {
+            printf("Destory Heap\n");
+        }
+    }
+
     // 注册表操作示例
     HKEY hKey;
     LONG openResult = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_SET_VALUE, &hKey);

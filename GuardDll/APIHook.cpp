@@ -434,6 +434,43 @@ DLL_EXPORT LPVOID WINAPI NewHeapAlloc(HANDLE hHeap, DWORD  dwFlags, SIZE_T dwByt
     }
 }
 
+
+LSTATUS GetKeyPathFromhKey(HKEY hKey, LPSTR path, DWORD pathLen)
+{
+    // 将hKey转换为注册表路径
+    LSTATUS result = ERROR;
+    if (hKey == NULL)
+    {
+        return result;
+    }
+    HMODULE dll = LoadLibrary(L"ntdll.dll");
+    if (dll == NULL)
+    {
+        return result;
+    }
+    typedef DWORD(__stdcall* NtQueryKeyType)(
+        HANDLE  KeyHandle,
+        int KeyInformationClass,
+        PVOID  KeyInformation,
+        ULONG  Length,
+        PULONG  ResultLength);
+
+    NtQueryKeyType func = reinterpret_cast<NtQueryKeyType>(::GetProcAddress(dll, "NtQueryKey"));
+
+    if (func != NULL) {
+        DWORD size = 0;
+        WCHAR buffer[MAX_PATH];
+        memset(buffer, 0, MAX_PATH);
+        result = func(hKey, 3, (PVOID)buffer, MAX_PATH * sizeof(WCHAR), &size);
+        if (result == ERROR_SUCCESS)
+        {
+            WideCharToMultiByte(CP_ACP, 0, buffer + 2, -1, path, pathLen, NULL, NULL);
+        }
+    }
+    FreeLibrary(dll);
+    return result;
+}
+
 extern LSTATUS(WINAPI* OldRegCreateKeyEx)(
     HKEY                        hKey,
     LPCTSTR                     lpSubKey,
@@ -460,7 +497,12 @@ DLL_EXPORT LSTATUS WINAPI NewRegCreateKeyEx(
 {
     API_HOOK_BEGIN_MACRO(API_RegCreateKeyEx, 2);
 
-        API_ARG_INT_MACRO(HKEY, hKey);
+        // 将hKey转换为注册表路径
+        char hKeyValue[MAX_PATH];
+        memset(hKeyValue, 0, MAX_PATH);
+        GetKeyPathFromhKey(hKey, hKeyValue, MAX_PATH);
+
+        API_ARG_STR_MACRO(LPCSTR, hKeyValue);
         API_ARG_WSTR_MACRO(LPWSTR, lpSubKey);
 
     API_HOOK_END_MACRO(API_RegCreateKeyEx);
@@ -495,7 +537,12 @@ DLL_EXPORT LSTATUS WINAPI NewRegSetValueEx(
 {
     API_HOOK_BEGIN_MACRO(API_RegSetValueEx, 5);
 
-        API_ARG_INT_MACRO(HKEY, hKey);
+        // 将hKey转换为注册表路径
+        char hKeyValue[MAX_PATH];
+        memset(hKeyValue, 0, MAX_PATH);
+        GetKeyPathFromhKey(hKey, hKeyValue, MAX_PATH);
+
+        API_ARG_STR_MACRO(LPCSTR, hKeyValue);
         API_ARG_WSTR_MACRO(LPCWSTR, lpValueName);
         API_ARG_INT_MACRO(DWORD, dwType);
         API_ARG_MACRO(BYTE*, lpData, lpData, cbData);
@@ -519,7 +566,12 @@ DLL_EXPORT LSTATUS WINAPI NewRegCloseKey(HKEY hKey)
 {
     API_HOOK_BEGIN_MACRO(API_RegCloseKey, 1);
 
-        API_ARG_INT_MACRO(HKEY, hKey);
+        // 将hKey转换为注册表路径
+        char hKeyValue[MAX_PATH];
+        memset(hKeyValue, 0, MAX_PATH);
+        GetKeyPathFromhKey(hKey, hKeyValue, MAX_PATH);
+
+        API_ARG_STR_MACRO(LPCSTR, hKeyValue);
 
     API_HOOK_END_MACRO(API_RegCloseKey);
 
@@ -551,7 +603,12 @@ DLL_EXPORT LSTATUS WINAPI NewRegOpenKeyEx(
 {
     API_HOOK_BEGIN_MACRO(API_RegOpenKeyEx, 2);
 
-        API_ARG_INT_MACRO(HKEY, hKey);
+        // 将hKey转换为注册表路径
+        char hKeyValue[MAX_PATH];
+        memset(hKeyValue, 0, MAX_PATH);
+        GetKeyPathFromhKey(hKey, hKeyValue, MAX_PATH);
+
+        API_ARG_STR_MACRO(LPCSTR, hKeyValue);
         API_ARG_WSTR_MACRO(LPWSTR, lpSubKey);
 
     API_HOOK_END_MACRO(API_RegOpenKeyEx);
@@ -575,7 +632,12 @@ DLL_EXPORT LSTATUS WINAPI NewRegDeleteValue(
 {
     API_HOOK_BEGIN_MACRO(API_RegDeleteValue, 2);
 
-        API_ARG_INT_MACRO(HKEY, hKey);
+        // 将hKey转换为注册表路径
+        char hKeyValue[MAX_PATH];
+        memset(hKeyValue, 0, MAX_PATH);
+        GetKeyPathFromhKey(hKey, hKeyValue, MAX_PATH);
+
+        API_ARG_STR_MACRO(LPCSTR, hKeyValue);
         API_ARG_WSTR_MACRO(LPWSTR, lpValueName);
 
     API_HOOK_END_MACRO(API_RegDeleteValue);

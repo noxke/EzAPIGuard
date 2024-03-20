@@ -188,19 +188,22 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                 self.processListTreeWidget.addTopLevelItem(p.list_item)
                 # 添加api记录
                 for api in d["records"]:
+                    api_id = api["id"]
                     api_args = api["api_args"]
                     api_name = api["name"]
                     api_time = api["time"]
                     api_rule = api["rule"]
                     item = QTreeWidgetItem(None, 
-                    [api_name, f"[{p.name}]  {time.ctime(api_time)}", api_rule])
+                    ["", api_name, f"[{p.name}]  {time.ctime(api_time)}", api_rule])
+                    item.setData(0, Qt.ItemDataRole.DisplayRole, api_id)
                     # 添加参数到记录item中
                     for key, value in api_args.items():
-                        QTreeWidgetItem(item, [key, str(value)])
+                        QTreeWidgetItem(item, ["", key, str(value)])
                     self.__record_list.append({"proc":p, "args_str":f"{api_name}{api_args}", "treeListItem":item})
                     if (p != self.__selected_proc and self.__config_mode != CONFIG_OVERVIEW):
                         item.setHidden(True)
                     self.recordTreeWidget.addTopLevelItem(item)
+                self.__flash_record()
             except:
                 continue
         f.close()
@@ -234,6 +237,17 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                     record["treeListItem"].setHidden(True)
             else:
                 record["treeListItem"].setHidden(True)
+        # 刷新record_info
+        info_msg = ""
+        if (self.__config_mode == CONFIG_OVERVIEW):
+            for proc in self.__proc_list:
+                for info in proc.record_info:
+                    info_msg = info_msg + info + "\n\n"
+        elif (self.__selected_proc != None):
+            for info in self.__selected_proc.record_info:
+                info_msg = info_msg + info + "\n\n"
+        self.loginfoTextBrowser.clear()
+        self.loginfoTextBrowser.setMarkdown(info_msg)
 
     def __flash_thread(self):
         """界面刷新线程 刷新进程列表中进程的存活状态"""
@@ -677,9 +691,6 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         """api hook记录 处理api请求"""
         check_info = self.analyzer.checker(api_msg_data)
 
-        #! temp log
-        print(check_info)
-
         api_msg = struct.unpack(APIHook.api_hooked_msg_struct, api_msg_data[:24])
         api_time = api_msg[3]
         api_id = api_msg[4]
@@ -768,6 +779,7 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                 api_rule = "Reject"
             case 2: # Request
                 msg = f"## {api_name}\n\n"
+                msg += f"[INFO] {check_info}\n\n"
                 for arg_name, arg_value in api_args.items():
                     msg += f"{arg_name}: \t{arg_value}\n\n"
                 if (self.api_request(msg)):
@@ -786,6 +798,9 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         record = {"id": record_id, "api_args":api_args, "name":api_name, "time":api_time, "rule":api_rule}
         proc.records.append(record)
 
+        if (len(check_info) != 0):
+            proc.record_info.append(check_info)
+
         item = QTreeWidgetItem(None, 
         ["", api_name, f"[{proc.name}]  {time.ctime(api_time)}", api_rule])
         item.setData(0, Qt.ItemDataRole.DisplayRole, record_id)
@@ -794,6 +809,5 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             QTreeWidgetItem(item, ["", key, str(value)])
 
         self.__record_list.append({"proc":proc, "args_str":f"{api_name}{api_args}", "treeListItem":item})
-        if (proc != self.__selected_proc and self.__config_mode != CONFIG_OVERVIEW):
-            item.setHidden(True)
         self.recordTreeWidget.addTopLevelItem(item)
+        self.__flash_record()

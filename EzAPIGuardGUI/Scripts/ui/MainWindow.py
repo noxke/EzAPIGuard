@@ -130,9 +130,10 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         header.setSortIndicator(0, Qt.SortOrder.AscendingOrder)
 
         # hook记录宽度
-        self.recordTreeWidget.setColumnWidth(0, 200)
-        self.recordTreeWidget.setColumnWidth(1, 450)
-        self.recordTreeWidget.setColumnWidth(2, 60)
+        self.recordTreeWidget.setColumnWidth(0, 50)
+        self.recordTreeWidget.setColumnWidth(1, 120)
+        self.recordTreeWidget.setColumnWidth(2, 480)
+        self.recordTreeWidget.setColumnWidth(3, 60)
         header = self.recordTreeWidget.header()
         header.setSortIndicator(0, Qt.SortOrder.AscendingOrder)
         self.searchLineEdit.clear()
@@ -728,17 +729,17 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                     api_args[key] = hex(int.from_bytes(value, 'little'))
 
             case APIHook.API_RegCreateKeyEx | APIHook.API_RegOpenKeyEx:
-                api_args["hKey"] = hex(int.from_bytes(api_args["hKey"], 'little'))
+                api_args["hKeyValue"] = api_args["hKeyValue"].decode(encoding="ansi")
                 api_args["lpSubKey"] = api_args["lpSubKey"].decode(encoding="ansi")
             case APIHook.API_RegSetValueEx:
-                api_args["hKey"] = hex(int.from_bytes(api_args["hKey"], 'little'))
+                api_args["hKeyValue"] = api_args["hKeyValue"].decode(encoding="ansi")
                 api_args["lpValueName"] = api_args["lpValueName"].decode(encoding="ansi")
                 api_args["dwType"] = hex(int.from_bytes(api_args["dwType"], 'little'))
                 api_args["cbData"] = hex(int.from_bytes(api_args["cbData"], 'little'))
             case APIHook.API_RegCloseKey:
-                api_args["hKey"] = hex(int.from_bytes(api_args["hKey"], 'little'))
+                api_args["hKeyValue"] = api_args["hKeyValue"].decode(encoding="ansi")
             case APIHook.API_RegDeleteValue:
-                api_args["hKey"] = hex(int.from_bytes(api_args["hKey"], 'little'))
+                api_args["hKeyValue"] = api_args["hKeyValue"].decode(encoding="ansi")
                 api_args["lpValueName"] = api_args["lpValueName"].decode(encoding="ansi")
 
             case APIHook.API_send | APIHook.API_recv | APIHook.API_sendto\
@@ -781,14 +782,16 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                 pass
 
         # 添加记录
-        record = {"api_args":api_args, "name":api_name, "time":api_time, "rule":api_rule}
+        record_id = len(proc.records)
+        record = {"id": record_id, "api_args":api_args, "name":api_name, "time":api_time, "rule":api_rule}
         proc.records.append(record)
 
         item = QTreeWidgetItem(None, 
-        [api_name, f"[{proc.name}]  {time.ctime(api_time)}", api_rule])
+        ["", api_name, f"[{proc.name}]  {time.ctime(api_time)}", api_rule])
+        item.setData(0, Qt.ItemDataRole.DisplayRole, record_id)
         # 添加参数到记录item中
         for key, value in api_args.items():
-            QTreeWidgetItem(item, [key, str(value)])
+            QTreeWidgetItem(item, ["", key, str(value)])
 
         self.__record_list.append({"proc":proc, "args_str":f"{api_name}{api_args}", "treeListItem":item})
         if (proc != self.__selected_proc and self.__config_mode != CONFIG_OVERVIEW):

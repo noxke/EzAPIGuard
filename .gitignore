@@ -39,7 +39,6 @@ obj.*
 *.tlog
 *.log
 *.obj
-*.user
 *.recipe
 /bin.*
 *.vcxproj.FileListAbsolute.txt

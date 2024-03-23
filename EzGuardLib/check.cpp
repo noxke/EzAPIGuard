@@ -20,6 +20,7 @@
 
 #pragma comment(lib, "Ws2_32.lib") // 链接Winsock库，用于网络通信
 // 定义各种API操作的宏，用于简化代码中的判断逻辑
+// 日志函数，支持各种类型的参数写入，采用printf相同的方式选择写入类型
 
 // 定义UDP消息结构体
 struct udp_msg_t
@@ -68,7 +69,7 @@ struct processState {
     std::unordered_map<uint32_t, networkInfo> networkConnections;
     std::unordered_set<std::string> registerSave;
 };
-
+processState state; // 假设有一个state对象
 back_warns back_warn;
 
 #define DLL_EXPORT extern "C" __declspec(dllexport)
@@ -92,80 +93,96 @@ void init_changeto(struct info* checkAPIarg, udp_msg_t* msg) {
     checkAPIarg->name_off = msg->name_off;
     checkAPIarg->name_len = msg->name_len;
     uint32_t cnt = 0;
-    for (uint32_t sit = 4; cnt <(uint32_t)checkAPIarg->arg_num; sit += 8) {
+    for (uint32_t sit = 4; cnt < (uint32_t)checkAPIarg->arg_num; sit += 8) {
         // 确保正确处理msg->data
         uint32_t data_index = (((uint32_t)msg->data[sit + 1]) << 8) + (uint32_t)msg->data[sit];
         uint32_t data_length = ((uint32_t)msg->data[sit + 2]) + ((uint32_t)(msg->data[sit + 3]) << 8);
-        //if (cnt == 1) {
-            //std::string s = std::to_string(data_length);
-            //snprintf(back_warn.warn_level_data, s.size()+1, s.c_str());
-        //}
         if (data_index + data_length <= UDP_BUFFER_SIZE) { // 确保没有缓冲区溢出
-            //memcpy(checkAPIarg->arg_Value[cnt], &msg->data[data_index], data_length);
-            memcpy(checkAPIarg->arg_Value[cnt], (&msg->data[data_index - 24]),data_length);
-            checkAPIarg->arg_Value[cnt][data_length] ='\0'; // 字符串结束符
+            memcpy(checkAPIarg->arg_Value[cnt], (&msg->data[data_index - 24]), data_length);
+            checkAPIarg->arg_Value[cnt][data_length] = '\0'; // 字符串结束符
             cnt++;
         }
     }
 }
 
 // 检查堆操作API
-void checkAPIheap(struct info* checkAPIarg, std::unordered_set<uint32_t>* HeapSave,std::unordered_set<uint32_t>* HeapBlockSave) {
-    uint32_t handle_int;
+void checkAPIheap(struct info* checkAPIarg, std::unordered_set<uint32_t>* HeapSave, std::unordered_set<uint32_t>* HeapBlockSave) {
+    uint32_t handle_int = 0;
+    uint32_t handle_block_int = 0;
     switch (checkAPIarg->api_id) {
     case API_HeapCreate: {
-        handle_int = (checkAPIarg->arg_Value[3][0]) + (checkAPIarg->arg_Value[3][1] << 8) + (checkAPIarg->arg_Value[3][2] << 16) + (checkAPIarg->arg_Value[3][3] << 24);; // 修正API_HeapCreate的索引
+        handle_int = *(reinterpret_cast<uint32_t*>(checkAPIarg->arg_Value[3])); // 更安全的转换方式
         HeapSave->insert(handle_int); // 插入堆操作
         break;
     }
     case API_HeapDestroy:
     case API_HeapFree: {
-        handle_int = (checkAPIarg->arg_Value[0][0]) + (checkAPIarg->arg_Value[0][1] << 8) + (checkAPIarg->arg_Value[0][2] << 16) + (checkAPIarg->arg_Value[0][3] << 24);;
-        uint32_t handle_block_int= (checkAPIarg->arg_Value[2][0]) + (checkAPIarg->arg_Value[2][1] << 8) + (checkAPIarg->arg_Value[2][2] << 16) + (checkAPIarg->arg_Value[2][3] << 24);
-        if (checkAPIarg->api_id == API_HeapDestroy || checkAPIarg->api_id == API_HeapFree) {
-            auto it = HeapSave->find(handle_int);
-            auto its = HeapBlockSave->find(handle_block_int);
-            if (it != HeapSave->end() && checkAPIarg->api_id == API_HeapDestroy) {
-                HeapSave->erase(it); //堆释放
+        handle_int = *(reinterpret_cast<uint32_t*>(checkAPIarg->arg_Value[0]));
+        handle_block_int = *(reinterpret_cast<uint32_t*>(checkAPIarg->arg_Value[2]));
+        auto it = HeapSave->find(handle_int);
+        auto its = HeapBlockSave->find(handle_block_int);
+        if (it != HeapSave->end()) {
+            if (checkAPIarg->api_id == API_HeapDestroy) {
+                HeapSave->erase(it); // 堆释放
             }
-            else if (it != HeapSave->end() && its == HeapBlockSave->end()&&checkAPIarg->api_id==API_HeapFree) {
-                HeapBlockSave->insert(handle_block_int);//用于检测是否存在double free
+            else if (checkAPIarg->api_id == API_HeapFree) {
+                if (its == HeapBlockSave->end()) {
+                    HeapBlockSave->insert(handle_block_int); // 用于检测是否存在double free
+                }
+                else {
+                    // free掉已经被free的堆
+                    back_warn.is_warn = true;
+                    strcat_s(back_warn.warn_level_data, "[High]Attempt to double free heap\n");
+                }
             }
-            else if(it==HeapSave->end()||(its!= HeapBlockSave->end()&& checkAPIarg->api_id == API_HeapFree)){
-                //两种情况存在异常：1.Destory/free 不存在的堆 2.free掉已经被free的堆
-                back_warn.is_warn = true;
-                strcat_s(back_warn.warn_level_data, "[High]Attempt to destroy or free invalid heap\n");
-            }
+        }
+        else {
+            // Destory/free 不存在的堆
+            back_warn.is_warn = true;
+            strcat_s(back_warn.warn_level_data, "[High]Attempt to destroy or free invalid heap\n");
         }
         break;
     }
     }
 }
-
 // 检查文件操作API
 void checkAPIfile(struct info* checkAPIarg, std::set<std::string>* foldernameSave, std::string* source_filepath) {
-    std::string lpfilename =(char*) checkAPIarg->arg_Value[0]; // 获取文件名
-    // 简化文件路径提取
-    std::string folderpath = lpfilename.substr(0, lpfilename.find_last_of("\\/")); // 提取文件夹路径
-    std::string foldername = folderpath.substr(folderpath.find_last_of("\\/") + 1); // 提取最近文件夹
-    std::string filepathfolderpath = ( * source_filepath).substr(0, ( * source_filepath).find_last_of("\\/")); // 提取文件夹路径
-    std::string filepathfoldername = filepathfolderpath.substr(filepathfolderpath.find_last_of("\\/") + 1); // 提取最近文件夹
-    if (folderpath == ".") {
-        folderpath = filepathfolderpath;
-        foldername = filepathfoldername;
-        lpfilename= lpfilename.substr(lpfilename.find_last_of("\\/") + 1);
+    std::string lpfilename = std::string(reinterpret_cast<char*>(checkAPIarg->arg_Value[0])); // 安全地转换并获取文件名
+    // 规范化并简化文件路径提取
+    std::replace(lpfilename.begin(), lpfilename.end(), '\\', '/');
+    std::replace(source_filepath->begin(), source_filepath->end(), '\\', '/'); // 将source_filepath路径分隔符也规范化为 '/'
+    size_t lastSlashPos = lpfilename.find_last_of('/');
+    std::string folderName; // 用于存储最近的文件夹名称
+    if (lastSlashPos != std::string::npos) {
+        size_t prevSlashPos = lpfilename.rfind('/', lastSlashPos - 1); // 查找倒数第二个斜杠的位置
+        if (prevSlashPos != std::string::npos) {
+            folderName = lpfilename.substr(prevSlashPos + 1, lastSlashPos - prevSlashPos - 1); // 提取最近的文件夹名称
+        }
+        else {
+            folderName = lpfilename.substr(0, lastSlashPos); // 当文件路径中只有一个斜杠时，提取该斜杠前的所有内容作为文件夹名称
+        }
     }
-    //snprintf(back_warn.warn_level_data, folderpath.size() + 1, folderpath.c_str());
-    // 检测是否存在操作范围有多个文件夹
-    foldernameSave->insert(foldername); // 插入文件夹名
-    if (foldernameSave->size() >= 2) {
+    if (folderName.empty()) { // 当没有提供文件路径时
+        size_t sourceLastSlashPos = (*source_filepath).find_last_of('/');
+        size_t sourcePrevSlashPos = (*source_filepath).rfind('/', sourceLastSlashPos - 1); // 查找source_filepath中倒数第二个斜杠的位置
+        if (sourcePrevSlashPos != std::string::npos) {
+            folderName = (*source_filepath).substr(sourcePrevSlashPos + 1, sourceLastSlashPos - sourcePrevSlashPos - 1); // 采用source_filepath中最近的文件夹名称
+        }
+        else {
+            folderName = (*source_filepath).substr(0, sourceLastSlashPos); // 当source_filepath中只有一个斜杠时，提取该斜杠前的所有内容作为文件夹名称
+        }
+    }
+    // 插入并检查唯一的文件夹名称以检测跨多个文件夹的操作
+    auto insertResult = foldernameSave->insert(folderName); // 插入文件夹名称
+    if (insertResult.second && foldernameSave->size() > 1) { // 如果插入了一个新的文件夹名称且存在多个唯一的文件夹
         back_warn.is_warn = true;
-        strcat_s(back_warn.warn_level_data, "[Info]The program operated on multiple folders/n");
+        strcat_s(back_warn.warn_level_data, "[Info]The program operated on multiple folders\n");
     }
     // 自我复制和可执行文件修改检查
     if (checkAPIarg->api_id == API_CreateFile) {
-        uint32_t dwDesireadAccess = (checkAPIarg->arg_Value[1][0]) + (checkAPIarg->arg_Value[1][1] << 8) + (checkAPIarg->arg_Value[1][2] << 16) + (checkAPIarg->arg_Value[1][3] << 24); // 获取访问权限
-        bool isSelfReplication = (dwDesireadAccess & GENERIC_READ) && ((*source_filepath).find(lpfilename) != std::string::npos); // 检查是否自我复制
+        std::string lpfilenameiner = lpfilename.substr(lpfilename.find_last_of('/') + 1);
+        uint32_t dwDesiredAccess = *reinterpret_cast<uint32_t*>(checkAPIarg->arg_Value[1]); // 获取访问权限
+        bool isSelfReplication = (dwDesiredAccess & GENERIC_READ) && (source_filepath->find(lpfilenameiner) != std::string::npos); // 检查是否自我复制
         if (isSelfReplication) {
             back_warn.is_warn = true;
             strcat_s(back_warn.warn_level_data, "[High]The program has replicated itself\n");
@@ -176,7 +193,7 @@ void checkAPIfile(struct info* checkAPIarg, std::set<std::string>* foldernameSav
     std::vector<std::string> executableExtensions = { ".exe", ".dll", ".ocx","com","msi","ini" };
     bool isExecutableModification = std::any_of(executableExtensions.begin(), executableExtensions.end(), [&](const std::string& ext) {
         return lpfilename_lower.find(ext) != std::string::npos;
-        })&&(checkAPIarg->api_id!=API_ReadFile) ;
+        }) && (checkAPIarg->api_id != API_ReadFile);
         if (isExecutableModification) {
             back_warn.is_warn = true;
             strcat_s(back_warn.warn_level_data, "[Medium]The program modified other executable code\n");
@@ -185,14 +202,28 @@ void checkAPIfile(struct info* checkAPIarg, std::set<std::string>* foldernameSav
 
 // 检查注册表操作API
 void checkAPIregistry(struct info* checkAPIarg, std::unordered_set<std::string>* registerSave) {
-    std::string regPath = (char*)checkAPIarg->arg_Value[0]; // 获取注册表路径
+    std::string regPath;
+    if (checkAPIarg->api_id == API_RegCloseKey) {
+        regPath = (char*)checkAPIarg->arg_Value[0]; // For API_RegCloseKey, the registry path is in arg_Value[0]
+    }
+    else {
+        std::string potentialRegPath1 = (char*)checkAPIarg->arg_Value[0];
+        std::string potentialRegPath2 = (char*)checkAPIarg->arg_Value[1];
+        if (potentialRegPath1.find("Software") != std::string::npos || potentialRegPath1.find("HKEY") != std::string::npos) {
+            regPath = potentialRegPath1;
+        }
+        else if (potentialRegPath2.find("Software") != std::string::npos || potentialRegPath2.find("HKEY") != std::string::npos) {
+            regPath = potentialRegPath2;
+        }
+        else {
+            regPath = potentialRegPath2; // Default to arg_Value[1] if no key indicators are found
+        }
+    }
     registerSave->insert(regPath);
-    FILE* logFile;
-    errno_t err = fopen_s(&logFile, "api_log.txt", "a"); // 使用fopen_s打开或创建日志文件进行追加
-    if (err == 0) {
-        fprintf(logFile, "%d", checkAPIarg->api_id);
-        fprintf(logFile, "regPath: %s\n", regPath.c_str()); // 将结果输出到日志文件中
-        fclose(logFile); // 关闭文件
+    bool isnewcreateModification = checkAPIarg->api_id == API_RegCreateKeyEx;
+    if (isnewcreateModification) {
+        back_warn.is_warn = true;
+        sprintf_s(back_warn.warn_level_data, "[Medium]The program adds a new registry key at %s\n", regPath.c_str());
     }
     bool isAutostartModification = (checkAPIarg->api_id == API_RegCreateKeyEx || checkAPIarg->api_id == API_RegSetValueEx) && (regPath.find("Software\\Microsoft\\Windows\\CurrentVersion\\Run") != std::string::npos); // 检查是否修改了自启动项
 
@@ -220,10 +251,10 @@ void checkAPInetwork(struct info* checkAPIarg, std::unordered_map<uint32_t, netw
     case API_connect: {
         // Parse the arguments of the API call
         type = (checkAPIarg->arg_Value[0][0]) + (checkAPIarg->arg_Value[0][1] << 8) + (checkAPIarg->arg_Value[0][2] << 16) + (checkAPIarg->arg_Value[0][3] << 24); ; // Get the type of network operation
-        local =(char*) checkAPIarg->arg_Value[1]; // Local address and port
+        local = (char*)checkAPIarg->arg_Value[1]; // Local address and port
         if (checkAPIarg->api_id != API_connect) {
             buffer = (char*)checkAPIarg->arg_Value[2]; // Data buffer
-            remote =(char*) checkAPIarg->arg_Value[3]; // Remote address and port
+            remote = (char*)checkAPIarg->arg_Value[3]; // Remote address and port
         }
         else {
             remote = (char*)checkAPIarg->arg_Value[2]; // Remote address and port for connect operation
@@ -247,7 +278,7 @@ void checkAPInetwork(struct info* checkAPIarg, std::unordered_map<uint32_t, netw
 
         // Save connection details to back_warn
         back_warn.is_warn = true;
-        sprintf_s(back_warn.warn_level_data, "Connection type: %s, Local: %s:%d, Remote: %s:%d\n",
+        sprintf_s(back_warn.warn_level_data, "Connection type: %s\n, Local: %s:%d)\n, Remote: %s:%d)\n",
             typestr.c_str(), localIPandPort.first.c_str(), localIPandPort.second,
             remoteIPandPort.first.c_str(), remoteIPandPort.second);
 
@@ -303,7 +334,6 @@ void checkAPI(struct info* checkAPIarg, struct udp_msg_t* msg, processState& sta
 
 
 DLL_EXPORT void checker(char* inBuffer, uint16_t inbufferlen, char* outbuffer, uint16_t outbufferlen) {
-    processState state; // 假设有一个state对象
     struct info checkAPIarg; // 假设有一个info对象
     memset(&back_warn, 0, sizeof(back_warn));
     checkAPI(&checkAPIarg, (udp_msg_t*)inBuffer, state); // 调用checkAPI函数处理输入缓冲区的数据

@@ -238,6 +238,9 @@ DLL_EXPORT BOOL WINAPI NewReadFile(
     BOOL ret = FALSE;
     API_HOOK_BEGIN_MACRO(API_ReadFile, 3);
 
+        // 提前读取内容
+        ret = OldReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &NumberOfBytesRead, lpOverlapped);
+
         // 获取文件名
         char buffer[UDP_BUFFER_SIZE];
         // 获取文件名需要关掉CreateFile的hook
@@ -250,8 +253,6 @@ DLL_EXPORT BOOL WINAPI NewReadFile(
         api_config[API_CreateFile] = old_config;
         API_ARG_MACRO(HANDLE, hFile, buffer, strlen(buffer));
 
-        // 提前读取内容
-        ret = OldReadFile(hFile, lpBuffer, nNumberOfBytesToRead, &NumberOfBytesRead, lpOverlapped);
         API_ARG_MACRO(LPVOID, lpBuffer, lpBuffer, nNumberOfBytesToRead);
         API_ARG_INT_MACRO(DWORD, nNumberOfBytesToRead);
 

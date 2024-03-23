@@ -238,14 +238,24 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
             else:
                 record["treeListItem"].setHidden(True)
         # 刷新record_info
-        info_msg = ""
+        info_msgs = []
         if (self.__config_mode == CONFIG_OVERVIEW):
             for proc in self.__proc_list:
                 for info in proc.record_info:
-                    info_msg = info_msg + info + "\n\n"
+                    info_msgs += info.split('\n')
         elif (self.__selected_proc != None):
             for info in self.__selected_proc.record_info:
-                info_msg = info_msg + info + "\n\n"
+                info_msgs += info.split('\n')
+        info_msg = ""
+        for info in info_msgs:
+            if info.startswith("[High]"):
+                info_msg += f"<font color=red>{info}</font>\n\n"
+            elif info.startswith("[Medium]"):
+                info_msg += f"<font color=orange>{info}</font>\n\n"
+            elif info.startswith("[Warning]"):
+                info_msg += f"<font color=purple>{info}</font>\n\n"
+            else:
+                info_msg += f"{info}\n\n"
         self.loginfoTextBrowser.clear()
         self.loginfoTextBrowser.setMarkdown(info_msg)
 

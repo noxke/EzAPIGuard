@@ -14,7 +14,7 @@ all:
     venv\Scripts\activate.bat && python -m PyQt6.uic.pyuic uics/ProcessView.ui -o Scripts/ui/__ProcessView.py
     venv\Scripts\activate.bat && python -m PyQt6.uic.pyuic uics/APIRequestDialog.ui -o Scripts/ui/__APIRequestDialog.py
     venv\Scripts\activate.bat && python -m PyQt6.uic.pyuic uics/AboutDialog.ui -o Scripts/ui/__AboutDialog.py
-    venv\Scripts\activate.bat && pyinstaller -n EzAPIGuard -y --paths Scripts main.py
+    venv\Scripts\activate.bat && pyinstaller --noconsole -n EzAPIGuard -y --paths Scripts main.py
     @if not exist "$(ROOT)\output" mkdir $(ROOT)\output
     @if not exist "$(ROOT)\output\EzAPIGuard" mkdir $(ROOT)\output\EzAPIGuard
     @cd "$(ROOT)\output\EzAPIGuard"

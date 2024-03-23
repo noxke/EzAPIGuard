@@ -248,6 +248,7 @@ DLL_EXPORT BOOL WINAPI NewReadFile(
         api_config[API_CreateFile] = HOOK_UNHOOK;
         if (GetFinalPathNameByHandleA(hFile, (LPSTR)buffer, UDP_BUFFER_SIZE, FILE_NAME_NORMALIZED) == 0)
         {
+            api_config[API_CreateFile] = old_config;
             goto _nosend;
         }
         api_config[API_CreateFile] = old_config;
@@ -299,6 +300,7 @@ DLL_EXPORT BOOL WINAPI NewWriteFile(
         api_config[API_CreateFile] = HOOK_UNHOOK;
         if (GetFinalPathNameByHandleA(hFile, (LPSTR)buffer, UDP_BUFFER_SIZE, FILE_NAME_NORMALIZED) == 0)
         {
+            api_config[API_CreateFile] = old_config;
             goto _nosend;
         }
         api_config[API_CreateFile] = old_config;

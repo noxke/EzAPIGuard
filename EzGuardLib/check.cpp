@@ -118,15 +118,14 @@ void checkAPIheap(struct info* checkAPIarg, std::unordered_set<uint32_t>* HeapSa
     case API_HeapDestroy:
     case API_HeapFree: {
         handle_int = *(reinterpret_cast<uint32_t*>(checkAPIarg->arg_Value[0]));
-        handle_block_int = *(reinterpret_cast<uint32_t*>(checkAPIarg->arg_Value[2]));
+        if (checkAPIarg->api_id == API_HeapFree)   handle_block_int = *(reinterpret_cast<uint32_t*>(checkAPIarg->arg_Value[2]));
         auto it = HeapSave->find(handle_int);
-        auto its = HeapBlockSave->find(handle_block_int);
         if (it != HeapSave->end()) {
             if (checkAPIarg->api_id == API_HeapDestroy) {
                 HeapSave->erase(it); // 堆释放
             }
             else if (checkAPIarg->api_id == API_HeapFree) {
-                if (its == HeapBlockSave->end()) {
+                if (HeapBlockSave->find(handle_block_int) == HeapBlockSave->end()) {
                     HeapBlockSave->insert(handle_block_int); // 用于检测是否存在double free
                 }
                 else {

@@ -182,6 +182,7 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
                 p.record_info = d["record_info"]
                 p.status = STATUS_EXIT
                 p.rules = d["rules"]
+                p.warn_cnt = d["warn_cnt"]
                 p.list_item = QTreeWidgetItem(
                 None, [p.name, str(-p.pid), p.status])
                 self.__proc_list.append(p)
@@ -411,6 +412,7 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         """切换config view到选中的进程"""
         self.__view_switching = True
         self.__config_mode = CONFIG_SELECTED
+        self.configLabel.setText(QCoreApplication.translate("MainWindow", "Config Selected"))
         time.sleep(0.01)
 
         self.selectedButton.setChecked(True)
@@ -445,6 +447,7 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
         """切换config view到全局"""
         self.__view_switching = True
         self.__config_mode = CONFIG_OVERVIEW
+        self.configLabel.setText(QCoreApplication.translate("MainWindow", "Config Overview"))
         # self.__selected_proc = None
         time.sleep(0.01)
 
@@ -700,6 +703,12 @@ class Ui_MainWindow(QMainWindow, __MainWindow.Ui_MainWindow):
     def __api_hooked(self, proc:Proc, api_msg_data, addr):
         """api hook记录 处理api请求"""
         check_info = self.analyzer.checker(api_msg_data)
+        if (check_info.startswith("[High]")):
+            proc.warn_cnt += 1
+        elif (check_info.startswith("[Media]")):
+            proc.warn_cnt += 1
+        elif (check_info.startswith("[Warning]")):
+            proc.warn_cnt += 1
 
         api_msg = struct.unpack(APIHook.api_hooked_msg_struct, api_msg_data[:24])
         api_time = api_msg[3]

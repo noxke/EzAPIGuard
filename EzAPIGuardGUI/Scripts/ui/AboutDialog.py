@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import QDialog
 about_msg = """
 ## EzAPIGuard
 
-Version 1.0.1
+Version 1.0.2
 
 EzAPIGuard is an API call analysis tool, can be used to analyze, record and intercept dangerous API operations of target process or executable.
 

@@ -812,10 +812,25 @@ DLL_EXPORT int WSAAPI Newsendto(
         // socket转换为本地的地址和端口
         sockaddr local_sockaddr;
         int local_sockaddr_len = sizeof(sockaddr);
-        getsockname(s, &local_sockaddr, &local_sockaddr_len);
-        getnameinfo(&local_sockaddr,
-            local_sockaddr_len, hostname,
-            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+        if (getsockname(s, &local_sockaddr, &local_sockaddr_len) == 0)
+        {
+            getnameinfo(&local_sockaddr,
+                local_sockaddr_len, hostname,
+                NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+        }
+        else
+        {
+            if (to->sa_family == AF_INET6)
+            {
+                snprintf(hostname, NI_MAXHOST, "0:0:0:0:0:0:0:0");
+                snprintf(servInfo, NI_MAXSERV, "0");
+            }
+            else
+            {
+                snprintf(hostname, NI_MAXHOST, "0.0.0.0");
+                snprintf(servInfo, NI_MAXSERV, "0");
+            }
+        }
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* local = buffer;
         API_ARG_STR_MACRO(char, local);
@@ -877,10 +892,25 @@ DLL_EXPORT int WSAAPI Newrecvfrom(
         // socket转换为本地的地址和端口
         sockaddr local_sockaddr;
         int local_sockaddr_len = sizeof(sockaddr);
-        getsockname(s, &local_sockaddr, &local_sockaddr_len);
-        getnameinfo(&local_sockaddr,
-            local_sockaddr_len, hostname,
-            NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+        if (getsockname(s, &local_sockaddr, &local_sockaddr_len) == 0)
+        {
+            getnameinfo(&local_sockaddr,
+                local_sockaddr_len, hostname,
+                NI_MAXHOST, servInfo, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+        }
+        else
+        {
+            if (from->sa_family == AF_INET6)
+            {
+                snprintf(hostname, NI_MAXHOST, "0:0:0:0:0:0:0:0");
+                snprintf(servInfo, NI_MAXSERV, "0");
+            }
+            else
+            {
+                snprintf(hostname, NI_MAXHOST, "0.0.0.0");
+                snprintf(servInfo, NI_MAXSERV, "0");
+            }
+        }
         snprintf(buffer, UDP_BUFFER_SIZE, "(%s, %s)", hostname, servInfo);
         char* local = buffer;
         API_ARG_STR_MACRO(char, local);

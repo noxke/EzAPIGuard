@@ -70,12 +70,12 @@ nmake</NMakeBuildCommandLine>
     <NMakeOutput>EzAPIGuard.exe</NMakeOutput>
     <NMakeCleanCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
-nmake clean
-name</NMakeCleanCommandLine>
+nmake clean</NMakeCleanCommandLine>
     <NMakePreprocessorDefinitions>_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeReBuildCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
-nmake clean</NMakeReBuildCommandLine>
+nmake clean
+nmake</NMakeReBuildCommandLine>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <NMakeBuildCommandLine>SET PLATFORM=$(PlatformTarget)
@@ -84,12 +84,12 @@ nmake</NMakeBuildCommandLine>
     <NMakeOutput>EzAPIGuard.exe</NMakeOutput>
     <NMakeCleanCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
-nmake clean
-name</NMakeCleanCommandLine>
+nmake clean</NMakeCleanCommandLine>
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeReBuildCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
-nmake clean</NMakeReBuildCommandLine>
+nmake clean
+nmake</NMakeReBuildCommandLine>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <NMakeBuildCommandLine>SET PLATFORM=$(PlatformTarget)
@@ -98,12 +98,12 @@ nmake</NMakeBuildCommandLine>
     <NMakeOutput>EzAPIGuard.exe</NMakeOutput>
     <NMakeCleanCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
-nmake clean
-name</NMakeCleanCommandLine>
+nmake clean</NMakeCleanCommandLine>
     <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeReBuildCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
-nmake clean</NMakeReBuildCommandLine>
+nmake clean
+nmake</NMakeReBuildCommandLine>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <NMakeBuildCommandLine>SET PLATFORM=$(PlatformTarget)
@@ -112,12 +112,12 @@ nmake</NMakeBuildCommandLine>
     <NMakeOutput>EzAPIGuard.exe</NMakeOutput>
     <NMakeCleanCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
-nmake clean
-name</NMakeCleanCommandLine>
+nmake clean</NMakeCleanCommandLine>
     <NMakePreprocessorDefinitions>NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
     <NMakeReBuildCommandLine>SET PLATFORM=$(PlatformTarget)
 SET CONFIG=$(Configuration)
-nmake clean</NMakeReBuildCommandLine>
+nmake clean
+nmake</NMakeReBuildCommandLine>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <BuildLog>

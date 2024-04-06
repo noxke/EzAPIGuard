@@ -10,28 +10,9 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #define SERVER_IP "127.0.0.1"
-#define TCP_PORT 65432
-#define UDP_PORT 65433
+int TCP_PORT;
+int UDP_PORT;
 #define BUFFER_SIZE 1024
-// 定义操作类型
-//#define example_normal_Heapoperate '1' 
-//#define example_doublefree_Heapoperate '2'
-// 文件操作类型定义
-//#define example_normal_fileoperate '3' 
-//#define example_operatemanyfile_fileoperate '4' 
-//#define example_selfcopy_fileoperate '5' 
-//#define example_changeexefile_fileoperate '6' 
-// 注册表操作类型定义
-//#define example_normal_registry '7'
-//#define example_createnewselfrun_registry '8
-//#define example_changeregistry_registry '9'
-// 网络连接操作类型定义
-// #define example_normalTCP_connect 'a'
-// #define example_normalUDP_connect 'b'
-// #define example_sendHTTP_connecet 'c'
-// #define example_sendHTTPS_connect 'd'
-
-//#define example_exit 'e'
 using namespace std;
 enum input {
     example_normal_Heapoperate = '1',// 正常堆操作
@@ -449,7 +430,7 @@ void startServer() {
     // Setup server address structure
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(TCP_PORT);
+    serverAddr.sin_port = htons(0);
 
     // Bind socket to server address and port
     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
@@ -468,7 +449,11 @@ void startServer() {
     }
 
     printf("Server is listening...\n");
-
+    sockaddr_in sin;
+    int addrlen = sizeof(sin);
+    if (getsockname(serverSocket, (struct sockaddr*)&sin, &addrlen) == 0 && sin.sin_family == AF_INET && addrlen == sizeof(sin)) {
+        InterlockedExchange((LONG*)&TCP_PORT, (LONG)ntohs(sin.sin_port));
+    }
     // Accept connection
     if ((clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen)) == INVALID_SOCKET) {
         printf("Accept failed\n");
@@ -478,28 +463,27 @@ void startServer() {
     }
 
     printf("Connected to client\n");
+        while (1) {
+            // Receive data
+            int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
+            if (bytesReceived > 0) {
+                buffer[bytesReceived] = '\0';
+                printf("Message from client: %s\n", buffer);
+            }
+            else if (bytesReceived == 0) {
+                printf("Connection closed\n");
+                break;
+            }
+            else {
+                printf("Error receiving data\n");
+                break;
+            }
+        }
 
-    while (1) {
-        // Receive data
-        int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
-        if (bytesReceived > 0) {
-            buffer[bytesReceived] = '\0';
-            printf("Message from client: %s\n", buffer);
-        }
-        else if (bytesReceived == 0) {
-            printf("Connection closed\n");
-            break;
-        }
-        else {
-            printf("Error receiving data\n");
-            break;
-        }
-    }
-
-    // Close sockets
-    closesocket(clientSocket);
-    closesocket(serverSocket);
-    WSACleanup();
+        // Close sockets
+        closesocket(clientSocket);
+        closesocket(serverSocket);
+        WSACleanup();
 }
 
 void normalTCP_connect() {
@@ -526,7 +510,7 @@ void normalTCP_connect() {
     serverAddr.sin_addr.s_addr = inet_addr(SERVER_IP);
     serverAddr.sin_port = htons(TCP_PORT);
 
-    // 连接到服务器
+    // Connected to the server
     if (connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
         printf("Connection failed\n");
         closesocket(clientSocket);
@@ -534,15 +518,15 @@ void normalTCP_connect() {
         return;
     }
 
-    printf("已连接到服务器\n");
+    printf("Connected to the server\n");
 
-    // 发送消息
+    // Send a message
     while (1)
     {
         char message[1000];
         scanf_s("%s", message, 1000);
         if (strcmp(message, "exit") == 0)break;
-        printf("发送消息: %s\n", message);
+        printf("Send a message: %s\n", message);
         send(clientSocket, message, strlen(message), 0);
         Sleep(1000);
     }
@@ -576,7 +560,7 @@ void startServerUDP() {
     // 设置服务器地址结构
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(UDP_PORT);
+    serverAddr.sin_port = htons(0);
 
     // 绑定套接字到服务器地址和端口
     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
@@ -586,17 +570,21 @@ void startServerUDP() {
         return;
     }
 
-    printf("服务器正在监听...\n");
-
+    printf("The server is listening...\n");
+    sockaddr_in sin;
+    int addrlen = sizeof(sin);
+    if (getsockname(serverSocket, (struct sockaddr*)&sin, &addrlen) == 0 && sin.sin_family == AF_INET && addrlen == sizeof(sin)) {
+        InterlockedExchange((LONG*)&UDP_PORT, (LONG)ntohs(sin.sin_port));
+    }
     while (1) {
         // 接收数据
         int bytesReceived = recvfrom(serverSocket, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientAddr, &addrLen);
         if (bytesReceived > 0) { // Check if bytesReceived is greater than 0 instead of not equal to SOCKET_ERROR
             buffer[bytesReceived] = '\0'; // Ensure buffer is null-terminated
-            printf("客户端 %s:%d 发送的消息: %s\n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port), buffer);
+            printf("client %s:%d Messages sent: %s\n", inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port), buffer);
         }
         else {
-            printf("接收数据出错或连接已关闭\n");
+            printf("There was an error receiving data or the connection was closed\n");
             break; // Break only on error or no data received to allow for continuous operation
         }
     }
@@ -637,7 +625,7 @@ void normalUDP_connect() {
         char message[1000];
         scanf_s("%s", message, 1000);
         if (strcmp(message, "exit") == 0) break;
-        printf("发送消息: %s\n", message);
+        printf("Send a message: %s\n", message);
         sendto(clientSocket, message, strlen(message), 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
     }
 
